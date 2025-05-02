@@ -1,13 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"go-sqlite-test/dbutils"
-	"io"
+	"go-sqlite-test/utils"
 	"log"
-	"os"
-	"os/exec"
 	"sort"
 	"strings"
 
@@ -18,31 +15,6 @@ type Item struct {
 	ID       int
 	Name     string
 	Priority int
-}
-
-func captureOutput(f func()) string {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outC := make(chan string)
-	// 在一个 goroutine 中读取管道中的数据
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	// 执行需要捕获输出的函数
-	f()
-
-	// 关闭写入端
-	w.Close()
-	// 恢复标准输出
-	os.Stdout = old
-	// 获取捕获的输出
-	out := <-outC
-	return out
 }
 
 func main() {
@@ -86,33 +58,20 @@ func main() {
 		fzfInput.WriteString(fmt.Sprintf("[P%d] %s\n", item.Priority, item.Name))
 	}
 
-	output := captureOutput(func() {
-
-		// 配置并执行fzf命令
-		cmd := exec.Command("fzf", "--ansi")
-
-		// 关键修改：绑定标准输入输出到系统终端
-		cmd.Stdin = strings.NewReader(fzfInput.String())
-		cmd.Stdout = os.Stdout // 直接输出到终端
-		cmd.Stderr = os.Stderr
-
-		// 启动命令但不等待完成
-		err = cmd.Start()
-		if err != nil {
-			log.Fatalf("启动fzf失败: %v", err)
+	selected, err := utils.RunFZF(fzfInput.String())
+	if err != nil {
+		if utils.IsCanceled(err) { // 检查是否用户取消
+			log.Println("选择已取消")
+			return
 		}
+		log.Fatal(err)
+	}
 
-		// 等待用户完成选择
-		err = cmd.Wait()
-	})
+	if selected == "" {
+		log.Println("未选择任何项目")
+		return
+	}
 
-	println(":>3----", output)
-	// selected := strings.TrimSpace(string(out))
-	// if selected == "" {
-	// 	log.Println("未选择任何项目")
-	// 	return
-	// }
-	// println(":>4----")
+	fmt.Printf("你选择了: %s\n", selected)
 
-	// fmt.Printf("你选择了: %s\n", selected)
 }
