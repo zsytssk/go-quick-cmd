@@ -40,28 +40,3 @@ func createTable(db *sql.DB, sqlStmt string) (sus bool, err error) {
 	}
 	return true, nil
 }
-
-func insertTestData(db *sql.DB) {
-	items := []struct {
-		name     string
-		priority int
-	}{
-		{"Learn Go", 5},
-		{"Do laundry", 2},
-		{"Buy milk", 1},
-		{"Fix bug", 10},
-	}
-
-	stmt, err := db.Prepare("INSERT INTO items(name, priority) VALUES(?, ?)")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
-
-	for _, item := range items {
-		_, err = stmt.Exec(item.name, item.priority)
-		if err != nil {
-			log.Printf("插入失败: %v\n", err)
-		}
-	}
-}
