@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"go-sqlite-test/dbutils"
+	"io"
 	"log"
 	"os"
 	"os/exec"
 	"sort"
 	"strings"
 
+	"github.com/creack/pty" // 新增pty支持
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -61,28 +64,40 @@ func main() {
 
 	// 配置并执行fzf命令
 	cmd := exec.Command("fzf", "--ansi")
-
-	// 关键修改：绑定标准输入输出到系统终端
 	cmd.Stdin = strings.NewReader(fzfInput.String())
-	cmd.Stdout = os.Stdout // 直接输出到终端
-	cmd.Stderr = os.Stderr
 
-	// 启动命令但不等待完成
-	err = cmd.Start()
+	// 使用伪终端启动进程
+	ptmx, err := pty.Start(cmd)
 	if err != nil {
-		log.Fatalf("启动fzf失败: %v", err)
+		log.Fatalf("启动失败: %v", err)
 	}
+	defer ptmx.Close()
 
-	// 等待用户完成选择
+	// 实时捕获输出
+	var output bytes.Buffer
+	go func() {
+		io.Copy(io.MultiWriter(&output, os.Stdout), ptmx) // 同时输出到终端和缓冲区
+	}()
+
+	// 等待命令完成
 	err = cmd.Wait()
 
-	println(":>3----")
-	// selected := strings.TrimSpace(string(out))
-	// if selected == "" {
-	// 	log.Println("未选择任何项目")
-	// 	return
-	// }
-	// println(":>4----")
+	// 错误处理
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			switch exitErr.ExitCode() {
+			case 130:
+				log.Println("选择已取消")
+				return
+			case 1:
+				log.Println("没有选择任何项目")
+				return
+			}
+		}
+		log.Fatalf("执行错误: %v", err)
+	}
 
-	// fmt.Printf("你选择了: %s\n", selected)
+	// 处理输出
+	selected := strings.TrimSpace(output.String())
+	fmt.Printf("\n你选择了: %s\n", selected)
 }
