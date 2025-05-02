@@ -25,6 +25,9 @@ func main() {
 
 	// 查询数据
 	items, err := dbutils.GetItems(db)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// 构建fzf输入
 	var fzfInput strings.Builder
@@ -46,6 +49,13 @@ func main() {
 		return
 	}
 
-	fmt.Printf("你选择了: %s\n", selected)
+	for _, item := range items {
+		if item.Name == selected {
+			fmt.Println("你选择了: ", item)
+			dbutils.UpdatePriority(db, item.ID, item.Priority+1)
+			break
+		}
+
+	}
 
 }

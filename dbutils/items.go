@@ -33,38 +33,21 @@ func insertTestData(db *sql.DB) {
 }
 
 // UpdatePriority 根据名称更新优先级
-func UpdatePriority(db *sql.DB, name string, newPriority int) error {
-	// 参数校验
-	if name == "" {
-		return fmt.Errorf("名称不能为空")
-	}
-
-	// 使用事务保证原子性
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // 安全回滚
-
-	// 执行更新
-	result, err := tx.Exec(
-		"UPDATE items SET priority = ? WHERE id = ?",
-		newPriority,
-		name,
+func UpdatePriority(db *sql.DB, id int, priority int) error {
+	result, err := db.Exec(
+		`UPDATE items
+         SET priority = ?
+         WHERE id = ?
+         AND priority <> ?`, // 避免无意义更新
+		priority, id, priority,
 	)
 	if err != nil {
 		return fmt.Errorf("更新失败: %w", err)
 	}
 
-	// 检查影响行数
-	rowsAffected, _ := result.RowsAffected()
-	if rowsAffected == 0 {
-		return fmt.Errorf("名称 '%s' 不存在", name)
-	}
-
-	// 提交事务
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("提交事务失败: %w", err)
+	// 简化版影响检查
+	if rows, _ := result.RowsAffected(); rows == 0 {
+		return fmt.Errorf("记录不存在或值未变化")
 	}
 
 	return nil
