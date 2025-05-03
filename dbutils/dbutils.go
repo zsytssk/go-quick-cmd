@@ -3,7 +3,6 @@ package dbutils
 import (
 	"database/sql"
 	"fmt"
-	"log"
 )
 
 func Init(dbPath string, tableName string, tableFmt string) (db *sql.DB, err error) {
@@ -25,7 +24,6 @@ func checkTableExist(db *sql.DB, tableName string) (exist bool) {
 	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)
 	err := db.QueryRow(query).Scan(&count)
 	if err != nil {
-		log.Fatal(err)
 		return false
 	}
 
@@ -39,4 +37,13 @@ func createTable(db *sql.DB, sqlStmt string) (sus bool, err error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func genTableStmt(tableName string) string {
+	return fmt.Sprintf(`
+	CREATE TABLE %s (
+    	id INTEGER PRIMARY KEY,
+    	name TEXT NOT NULL,
+    	priority INTEGER DEFAULT 0
+	);`, tableName)
 }

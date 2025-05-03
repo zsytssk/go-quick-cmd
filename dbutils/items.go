@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"sort"
 )
 
 func insertTestData(db *sql.DB) {
@@ -33,12 +32,14 @@ func insertTestData(db *sql.DB) {
 }
 
 // UpdatePriority 根据名称更新优先级
-func UpdatePriority(db *sql.DB, id int, priority int) error {
-	result, err := db.Exec(
-		`UPDATE items
+func UpdateItemPriority(db *sql.DB, tableName string, id int, priority int) error {
+	stmt := fmt.Sprintf(`UPDATE %s
          SET priority = ?
          WHERE id = ?
-         AND priority <> ?`, // 避免无意义更新
+         AND priority <> ?`, tableName)
+
+	result, err := db.Exec(
+		stmt,
 		priority, id, priority,
 	)
 	if err != nil {
@@ -59,8 +60,9 @@ type Item struct {
 	Priority int
 }
 
-func GetItems(db *sql.DB) (items []Item, err error) {
-	rows, err := db.Query("SELECT id, name, priority FROM items")
+func GetItems(db *sql.DB, tableName string) (items []Item, err error) {
+	queryStr := fmt.Sprintf("SELECT id, name, priority FROM %s ORDER BY priority desc", tableName)
+	rows, err := db.Query(queryStr)
 	if err != nil {
 		return
 	}
@@ -75,9 +77,5 @@ func GetItems(db *sql.DB) (items []Item, err error) {
 		items = append(items, it)
 	}
 
-	// 按优先级降序排序
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].Priority > items[j].Priority
-	})
 	return
 }
