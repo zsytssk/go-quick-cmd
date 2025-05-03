@@ -49,6 +49,26 @@ func UpdateItemPriority(db *sql.DB, tableName string, id int, priority int) erro
 	return nil
 }
 
+// UpdatePriority 根据名称更新优先级
+func InsertItemPriority(db *sql.DB, tableName string, name string, priority int) error {
+	stmt := fmt.Sprintf(`INSERT INTO %s (name, priority) VALUES (?, ?)`, tableName)
+
+	result, err := db.Exec(
+		stmt,
+		name, priority,
+	)
+	if err != nil {
+		return fmt.Errorf("更新失败: %w", err)
+	}
+
+	// 简化版影响检查
+	if rows, _ := result.RowsAffected(); rows == 0 {
+		return fmt.Errorf("记录不存在或值未变化")
+	}
+
+	return nil
+}
+
 func GetItems(db *sql.DB, tableName string) (items []Item, err error) {
 	queryStr := fmt.Sprintf("SELECT id, name, priority FROM %s ORDER BY priority desc", tableName)
 	rows, err := db.Query(queryStr)

@@ -79,6 +79,13 @@ func GetHistory(db *sql.DB) (items []Item, err error) {
 
 	return
 }
-func UpdateHistoryPriority(db *sql.DB, id int, priority int) (err error) {
-	return UpdateItemPriority(db, "history", id, priority)
+
+func UpdateHistoryPriority(db *sql.DB, item Item) (err error) {
+	if item.ID != -1 {
+		return UpdateItemPriority(db, "history", item.ID, item.Priority+1)
+	}
+	if item.Priority >= 2 {
+		return InsertItemPriority(db, "history", item.Name, item.Priority+1)
+	}
+	return
 }

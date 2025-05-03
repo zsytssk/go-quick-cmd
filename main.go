@@ -50,7 +50,7 @@ func main() {
 		return
 	}
 	item := items[index]
-	dbt.UpdateHistoryPriority(db, item.ID, item.Priority+1)
+	dbt.UpdateHistoryPriority(db, item)
 	fmt.Print(item.Name)
 
 }
