@@ -6,12 +6,18 @@
 
   - 然后再把那些执行文件 ignore 了，这样就不用担心编译后文件太大的问题了
 
+- @ques 编译到 awesome/bin
+
 - @todo
-  - 查找所有命令
   - 支持多个命令
 
 ### end
 
+- 查找所有命令
+
+- @ques 匹配字符
+- @ques fzf 能不能完全匹配按照顺序排列
+- @ques 更新 priority
 - @todo 检查 table 是否存在 name, 覆盖数据
 
 ## 2025-05-02 17:21:11

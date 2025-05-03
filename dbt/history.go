@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"go-sqlite-test/utils"
+	"sort"
 )
 
 func InitHistory(db *sql.DB, lineMap map[string]int) {
@@ -51,7 +52,32 @@ func GetHistory(db *sql.DB) (items []Item, err error) {
 		InitHistory(db, lineMap)
 	}
 
-	return GetItems(db, "history")
+	items, err = GetItems(db, "history")
+	if err != nil {
+		return
+	}
+	for key, count := range lineMap {
+		index := utils.FindItemIndex(items, func(item Item, _ int) bool {
+			return item.Name == key
+		})
+		if index != -1 {
+			continue
+		}
+		// fmt.Println("test:>", key, count)
+		item := Item{-1, key, count}
+		items = append(items, item)
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Priority > items[j].Priority
+	})
+
+	// index := utils.FindItemIndex(items, func(item Item, _ int) bool {
+	// 	return item.Name == "rm ./go-test"
+	// })
+	// fmt.Println("test:>", items)
+
+	return
 }
 func UpdateHistoryPriority(db *sql.DB, id int, priority int) (err error) {
 	return UpdateItemPriority(db, "history", id, priority)
