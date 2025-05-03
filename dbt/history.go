@@ -57,7 +57,7 @@ func GetHistory(db *sql.DB) (items []Item, err error) {
 		return
 	}
 	for key, count := range lineMap {
-		index := utils.FindItemIndex(items, func(item Item, _ int) bool {
+		index := utils.ArrFindIndex(items, func(item Item, _ int) bool {
 			return item.Name == key
 		})
 		if index != -1 {

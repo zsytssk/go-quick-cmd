@@ -41,7 +41,7 @@ func main() {
 		return
 	}
 
-	index := utils.FindItemIndex(items, func(item dbt.Item, _ int) bool {
+	index := utils.ArrFindIndex(items, func(item dbt.Item, _ int) bool {
 		return selected == fmt.Sprintf("%s [%d:%d]", item.Name, item.ID, item.Priority)
 	})
 
