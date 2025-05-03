@@ -4,9 +4,20 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
+
+func GetCurDirFile(fileName string) (filePath string, err error) {
+	ex, err := os.Executable()
+	if err != nil {
+		return
+	}
+	exPath := filepath.Dir(ex)
+	filePath = path.Join(exPath, fileName)
+	return
+}
 
 func expandPath(path string) (string, error) {
 	if strings.HasPrefix(path, "~") {

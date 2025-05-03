@@ -1,34 +1,29 @@
-package dbutils
+package dbt
 
 import (
+	"go-sqlite-test/utils"
+	"log"
+
 	"database/sql"
 	"fmt"
-	"log"
 )
 
-func insertTestData(db *sql.DB) {
-	items := []struct {
-		name     string
-		priority int
-	}{
-		{"Learn Go", 5},
-		{"Do laundry", 2},
-		{"Buy milk", 1},
-		{"Fix bug", 10},
-	}
-
-	stmt, err := db.Prepare("INSERT INTO items(name, priority) VALUES(?, ?)")
+func Init(dbPath string) (db *sql.DB, err error) {
+	filePath, err := utils.GetCurDirFile(dbPath)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
-	defer stmt.Close()
+	db, err = sql.Open("sqlite3", filePath)
+	if err != nil {
+		return
+	}
+	return
+}
 
-	for _, item := range items {
-		_, err = stmt.Exec(item.name, item.priority)
-		if err != nil {
-			log.Printf("插入失败: %v\n", err)
-		}
-	}
+type Item struct {
+	ID       int
+	Name     string
+	Priority int
 }
 
 // UpdatePriority 根据名称更新优先级
@@ -54,12 +49,6 @@ func UpdateItemPriority(db *sql.DB, tableName string, id int, priority int) erro
 	return nil
 }
 
-type Item struct {
-	ID       int
-	Name     string
-	Priority int
-}
-
 func GetItems(db *sql.DB, tableName string) (items []Item, err error) {
 	queryStr := fmt.Sprintf("SELECT id, name, priority FROM %s ORDER BY priority desc", tableName)
 	rows, err := db.Query(queryStr)
@@ -78,4 +67,34 @@ func GetItems(db *sql.DB, tableName string) (items []Item, err error) {
 	}
 
 	return
+}
+
+func checkTableExist(db *sql.DB, tableName string) (exist bool) {
+	// 执行查询，检查 sqlite_master 表中是否存在指定名称的表
+	var count int
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)
+	err := db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return false
+	}
+
+	// 如果查询结果大于 0，则表示表存在
+	return count > 0
+}
+
+func createTable(db *sql.DB, sqlStmt string) (sus bool, err error) {
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func genTableStmt(tableName string) string {
+	return fmt.Sprintf(`
+	CREATE TABLE %s (
+    	id INTEGER PRIMARY KEY,
+    	name TEXT NOT NULL,
+    	priority INTEGER DEFAULT 0
+	);`, tableName)
 }

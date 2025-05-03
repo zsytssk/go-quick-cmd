@@ -1,8 +1,9 @@
-package dbutils
+package dbt
 
 import (
 	"database/sql"
 	"fmt"
+	"go-sqlite-test/utils"
 )
 
 func InitHistory(db *sql.DB, lineMap map[string]int) {
@@ -41,6 +42,15 @@ func InitHistory(db *sql.DB, lineMap map[string]int) {
 }
 
 func GetHistory(db *sql.DB) (items []Item, err error) {
+	lineMap, err := utils.ReadFile("~/.bash_history")
+	if err != nil {
+		return
+	}
+	exist := checkTableExist(db, "history")
+	if !exist {
+		InitHistory(db, lineMap)
+	}
+
 	return GetItems(db, "history")
 }
 func UpdateHistoryPriority(db *sql.DB, id int, priority int) (err error) {

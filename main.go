@@ -1,9 +1,8 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	"go-sqlite-test/dbutils"
+	"go-sqlite-test/dbt"
 	"go-sqlite-test/utils"
 	"log"
 	"strings"
@@ -12,19 +11,12 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("sqlite3", "./example.db")
+	db, err := dbt.Init("./example.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	lineMap, err := utils.ReadFile("~/.bash_history")
-	if err != nil {
-		log.Fatal(err)
-	}
-	dbutils.InitHistory(db, lineMap)
-
-	// 	// 查询数据
-	items, err := dbutils.GetHistory(db)
+	items, err := dbt.GetHistory(db)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,9 +27,7 @@ func main() {
 		fzfInput.WriteString(fmt.Sprintf("%s\n", item.Name))
 	}
 
-	fmt.Print("--->1")
 	selected, err := utils.RunFZF(fzfInput.String())
-	fmt.Print("--->1")
 	if err != nil {
 		if utils.IsCanceled(err) { // 检查是否用户取消
 			log.Println("选择已取消")
@@ -51,18 +41,16 @@ func main() {
 		return
 	}
 
-	fmt.Print("--->2")
 	for _, item := range items {
 		if item.Name == selected {
 			// fmt.Println("你选择了: ", item)
-			dbutils.UpdateHistoryPriority(db, item.ID, item.Priority+1)
+			dbt.UpdateHistoryPriority(db, item.ID, item.Priority+1)
 			break
 		}
 
 	}
-	// fmt.Print("--->3", selected)
-
 	fmt.Print(selected)
+
 }
 
 // func main() {
