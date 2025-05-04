@@ -1,3 +1,5 @@
+`go build  -o /home/zsy/.config/awesome/autostart/ignoreBin/quickCmd`
+
 - @ques 有什么像 fzf 但是能设置权重的工具
 
 ## 2025-05-02 17:51:49
