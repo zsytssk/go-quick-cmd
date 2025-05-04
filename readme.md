@@ -2,13 +2,42 @@
 
 ## 2025-05-02 17:51:49
 
-- @todo
-
-  - 支持跳转文件夹命令
+- @todo 支持快捷键删除
 
 - @ques 编译到 awesome/bin
 
+```
+DROP TABLE table_name;
+
+```
+
 ### end
+
+- @todo
+
+  - 支持跳转文件夹命令
+  - 记录跳转文件夹
+
+- 支持记录 文件夹
+
+  - 历史记录中的常见的
+
+- bashHistory 排除 `cd`
+
+```bash
+(
+  find dirA -maxdepth 1 ! -name "*.log"
+  find dirB -maxdepth 3 -path "*/tmp" -prune -o -print
+  find dirC -path "*/.git" -prune -o -print
+) | fzf
+```
+
+```bash
+(
+  find ~/.config -maxdepth 1 -path "*node_modules*"  -path "*.git*"  -prune -o -print
+  find ~/Documents/zsy/ -maxdepth 2 -path "*node_modules*"  -path "*.git*" -prune -o -print
+) | fzf
+```
 
 - @todo 读取 history 写入数据库
 - @ques 插入数据

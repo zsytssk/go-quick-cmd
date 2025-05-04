@@ -37,6 +37,33 @@ func RunFZF(input string) (string, error) {
 	return strings.TrimSpace(buf.String()), nil
 }
 
+func RunCMD(input string) (string, error) {
+	// 创建伪终端
+	ptm, pts, err := pty.Open()
+	if err != nil {
+		return "", err
+	}
+	defer ptm.Close()
+	defer pts.Close()
+
+	// 创建结果缓冲区
+	// 配置fzf命令
+	var buf bytes.Buffer
+	cmd := exec.Command("bash", "-c", input)
+	cmd.Stdout = io.MultiWriter(pts, &buf) // 实时显示并捕获
+
+	cmd.Stderr = os.Stderr
+	// cmd.Stdin = io.MultiReader(strings.NewReader(input)) // 允许接收键盘输入
+
+	// 执行命令并等待完成
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+
+	// 返回清理后的结果
+	return strings.TrimSpace(buf.String()), nil
+}
+
 // 专用于捕获fzf输出的函数
 // func RunFZF(input string) (string, error) {
 // 	cmd := exec.Command("fzf", "--ansi")

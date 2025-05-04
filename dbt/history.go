@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"go-sqlite-test/utils"
 	"sort"
+	"strings"
 )
 
-func InitHistory(db *sql.DB, lineMap map[string]int) {
+func InitHistoryTable(db *sql.DB, lineMap map[string]int) {
 	exist := checkTableExist(db, "history")
 	if !exist {
 		createTable(db, genTableStmt("history"))
@@ -18,6 +19,7 @@ func InitHistory(db *sql.DB, lineMap map[string]int) {
 	stmtUpdate := `UPDATE history SET priority = ? WHERE name = ?`
 
 	for k, v := range lineMap {
+
 		if v <= 2 {
 			continue // 只处理出现次数大于 2 的
 		}
@@ -44,12 +46,21 @@ func InitHistory(db *sql.DB, lineMap map[string]int) {
 
 func GetHistory(db *sql.DB) (items []Item, err error) {
 	lineMap, err := utils.ReadFile("~/.bash_history")
+
 	if err != nil {
 		return
 	}
+
+	for key := range lineMap {
+		if strings.HasPrefix(key, "cd") && !strings.Contains(key, "&&") {
+			delete(lineMap, key)
+			continue
+		}
+	}
+
 	exist := checkTableExist(db, "history")
 	if !exist {
-		InitHistory(db, lineMap)
+		InitHistoryTable(db, lineMap)
 	}
 
 	items, err = GetItems(db, "history")

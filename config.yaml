@@ -1,0 +1,10 @@
+folders:
+  - folder: "~/.config"
+    depth: 1
+  - folder: "~/Documents/zsy/"
+    depth: 2
+  - folder: "~/Documents/zsy/job/"
+    depth: 1
+  - folder: "~/Documents/zsy/job/plims-background/"
+    depth: 1
+ignores: ["*node_modules*", "*.git*"]
