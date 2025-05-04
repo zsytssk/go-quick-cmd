@@ -4,6 +4,8 @@
 
 - @todo 支持快捷键删除
 
+- @ques 为了避免卡顿 能不能使用 stream 传递数据?
+
 - @ques 编译到 awesome/bin
 
 ```
