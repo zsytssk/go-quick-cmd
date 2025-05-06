@@ -4,18 +4,24 @@
 
 ## 2025-05-02 17:51:49
 
+- @ques 修改包名字
+
+- @ques 一键编译...
+
+  - 编译到 awesome/bin
+
 - @todo 支持快捷键删除
 
 - @ques 为了避免卡顿 能不能使用 stream 传递数据?
 
-- @ques 编译到 awesome/bin
+- @ques 扩展 update 方法 支持任意数量属性
+
+### end
 
 ```
 DROP TABLE table_name;
 
 ```
-
-### end
 
 - @todo
 
