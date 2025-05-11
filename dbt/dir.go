@@ -3,7 +3,7 @@ package dbt
 import (
 	"database/sql"
 	"fmt"
-	"go-sqlite-test/utils"
+	"quick-cmd/utils"
 	"sort"
 	"strings"
 )

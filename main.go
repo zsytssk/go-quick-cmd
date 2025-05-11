@@ -2,26 +2,31 @@ package main
 
 import (
 	"fmt"
-	"go-sqlite-test/command"
-	"go-sqlite-test/utils"
+	"quick-cmd/command"
+	"quick-cmd/utils"
+	"slices"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var supportCmd = []string{"bashHistory", "JumpDir"}
+var supportCmd = []string{"bashHistory", "jumpDir"}
 
 func main() {
 
 	cmd := utils.GetCmd()
-	if cmd != nil && !utils.ArrContains(supportCmd, *cmd) {
-		fmt.Printf("不支持命令 %v \n", *cmd)
+	if cmd == nil {
+		fmt.Println(`请输入执行命令 "bashHistory" | "jumpDir"`)
+		return
+	}
+	if !slices.Contains(supportCmd, *cmd) {
+		fmt.Println(`只支持命令："bashHistory" | "jumpDir"`, *cmd)
 		return
 	}
 
 	switch *cmd {
 	case "bashHistory":
 		command.HashHistory()
-	case "JumpDir":
+	case "jumpDir":
 		command.JumpDir()
 	default:
 		command.JumpDir()

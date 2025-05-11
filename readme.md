@@ -10,6 +10,11 @@
 
   - 编译到 awesome/bin
 
+- @todo 添加全局快捷命令
+
+  - 保存 init
+  - 编译脚本等等
+
 - @todo 支持快捷键删除
 
 - @ques 为了避免卡顿 能不能使用 stream 传递数据?

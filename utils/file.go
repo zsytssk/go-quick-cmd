@@ -9,11 +9,22 @@ import (
 	"strings"
 )
 
-func GetCurDirFile(fileName string) (filePath string, err error) {
+func GetCurDirFileName(fileSubFix string) (fileName string, err error) {
 	ex, err := os.Executable()
 	if err != nil {
 		return
 	}
+	filepath.Base(ex)
+	basename := filepath.Base(ex)
+	fileName = fmt.Sprintf(`%s.%s`, basename, fileSubFix)
+	return
+}
+func GetCurDirFilePath(fileName string) (filePath string, err error) {
+	ex, err := os.Executable()
+	if err != nil {
+		return
+	}
+	filepath.Base(ex)
 	exPath := filepath.Dir(ex)
 	filePath = path.Join(exPath, fileName)
 	return

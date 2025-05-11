@@ -2,29 +2,22 @@ package command
 
 import (
 	"fmt"
-	"go-sqlite-test/dbt"
-	"go-sqlite-test/utils"
 	"log"
+	"quick-cmd/dbt"
+	"quick-cmd/utils"
 	"strings"
 )
 
 func JumpDir() {
-	// db, err := dbt.Init("./example.db")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// _, err = dbt.GetDirHistory(db)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
 	config, err := utils.GetConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	db, err := dbt.Init("./example.db")
+	dbPath, err := utils.GetCurDirFileName("db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	db, err := dbt.Init(dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}

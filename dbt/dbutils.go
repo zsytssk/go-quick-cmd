@@ -1,15 +1,15 @@
 package dbt
 
 import (
-	"go-sqlite-test/utils"
 	"log"
+	"quick-cmd/utils"
 
 	"database/sql"
 	"fmt"
 )
 
 func Init(dbPath string) (db *sql.DB, err error) {
-	filePath, err := utils.GetCurDirFile(dbPath)
+	filePath, err := utils.GetCurDirFilePath(dbPath)
 	if err != nil {
 		return
 	}

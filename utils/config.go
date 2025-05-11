@@ -18,14 +18,18 @@ type Config struct {
 }
 
 func GetConfig() (conf Config, err error) {
-	configPath, err := GetCurDirFile("./config.yaml")
+	configName, err := GetCurDirFileName("config.yaml")
+	if err != nil {
+		return
+	}
+	configPath, err := GetCurDirFilePath(configName)
 	if err != nil {
 		return
 	}
 	yamlFile, err := os.ReadFile(configPath)
 	// 本地调试使用的文件
 	if yamlFile == nil {
-		yamlFile, err = os.ReadFile("config.yaml")
+		yamlFile, err = os.ReadFile(configName)
 	}
 	if err != nil {
 		return

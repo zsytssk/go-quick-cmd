@@ -1,4 +1,4 @@
-module go-sqlite-test
+module quick-cmd
 
 go 1.24.1
 

@@ -2,14 +2,18 @@ package command
 
 import (
 	"fmt"
-	"go-sqlite-test/dbt"
-	"go-sqlite-test/utils"
 	"log"
+	"quick-cmd/dbt"
+	"quick-cmd/utils"
 	"strings"
 )
 
 func HashHistory() {
-	db, err := dbt.Init("./example.db")
+	dbPath, err := utils.GetCurDirFileName("db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	db, err := dbt.Init(dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
