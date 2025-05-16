@@ -70,3 +70,8 @@ func ReadFile(filePath string) (lineMap map[string]int, err error) {
 
 	return
 }
+
+func PathExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || !os.IsNotExist(err)
+}

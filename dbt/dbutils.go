@@ -3,6 +3,9 @@ package dbt
 import (
 	"log"
 	"quick-cmd/utils"
+	"regexp"
+	"sort"
+	"strings"
 
 	"database/sql"
 	"fmt"
@@ -47,6 +50,59 @@ func UpdateItemPriority(db *sql.DB, tableName string, id int, priority int) erro
 	}
 
 	return nil
+}
+
+func UpdateItem(db *sql.DB, tableName string, id int, updates map[string]interface{}) error {
+	if len(updates) == 0 {
+		return fmt.Errorf("至少需要提供一个更新字段")
+	}
+
+	// 1. 构建 SET 子句
+	var setClause strings.Builder
+	params := make([]interface{}, 0, len(updates)+1)
+	i := 0
+
+	// 对字段名排序以保证顺序一致性
+	keys := make([]string, 0, len(updates))
+	for k := range updates {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, field := range keys {
+		if i > 0 {
+			setClause.WriteString(", ")
+		}
+		if !isValidFieldName(field) {
+			return fmt.Errorf("非法字段名: %s", field)
+		}
+		setClause.WriteString(fmt.Sprintf("%s = ?", field))
+		params = append(params, updates[field])
+		i++
+	}
+	fmt.Println(setClause.String())
+	// 2. 构建完整 SQL
+	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = ?", tableName, setClause.String())
+	params = append(params, id)
+
+	// 3. 执行 SQL
+	result, err := db.Exec(query, params...)
+	if err != nil {
+		return fmt.Errorf("更新失败: %w", err)
+	}
+
+	// 4. 检查影响行数
+	if rows, _ := result.RowsAffected(); rows == 0 {
+		return fmt.Errorf("记录不存在")
+	}
+
+	return nil
+}
+
+// 校验字段名合法性（防止 SQL 注入）
+func isValidFieldName(field string) bool {
+	matched, _ := regexp.MatchString("^[a-zA-Z0-9_]+$", field)
+	return matched
 }
 
 // UpdatePriority 根据名称更新优先级

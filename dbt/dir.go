@@ -58,6 +58,9 @@ func GetDir(db *sql.DB) (items []Item, err error) {
 		if strings.TrimSpace(newKey) == "" {
 			continue
 		}
+		if !utils.PathExists(newKey) {
+			continue
+		}
 		newMap[newKey] = v
 
 	}
@@ -91,7 +94,11 @@ func GetDir(db *sql.DB) (items []Item, err error) {
 
 func UpdateDirPriority(db *sql.DB, item Item) (err error) {
 	if item.ID != -1 {
-		return UpdateItemPriority(db, "dir", item.ID, item.Priority+1)
+		// return UpdateItemPriority(db, "dir", item.ID, item.Priority+1)
+		return UpdateItem(db, "dir", item.ID, map[string]interface{}{
+			"priority": item.Priority + 1,
+			"hide":     0,
+		})
 	}
 	return InsertItemPriority(db, "dir", item.Name, item.Priority+1)
 }
