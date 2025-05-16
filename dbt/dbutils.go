@@ -80,7 +80,7 @@ func UpdateItem(db *sql.DB, tableName string, id int, updates map[string]interfa
 		params = append(params, updates[field])
 		i++
 	}
-	fmt.Println(setClause.String())
+
 	// 2. 构建完整 SQL
 	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = ?", tableName, setClause.String())
 	params = append(params, id)
