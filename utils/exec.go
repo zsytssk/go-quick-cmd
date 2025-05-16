@@ -22,14 +22,14 @@ func RunFZF(input string) (string, error) {
 	// 创建结果缓冲区
 	// 配置fzf命令
 	var buf bytes.Buffer
-	cmd := exec.Command("fzf", "--ansi")
-	cmd.Stdout = io.MultiWriter(pts, &buf) // 实时显示并捕获
+	fzf := exec.Command("fzf", "--ansi")
+	fzf.Stdout = io.MultiWriter(pts, &buf) // 实时显示并捕获
 
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = io.MultiReader(strings.NewReader(input)) // 允许接收键盘输入
+	fzf.Stderr = os.Stderr
+	fzf.Stdin = io.MultiReader(strings.NewReader(input)) // 允许接收键盘输入
 
 	// 执行命令并等待完成
-	if err := cmd.Run(); err != nil {
+	if err := fzf.Run(); err != nil {
 		return "", err
 	}
 
