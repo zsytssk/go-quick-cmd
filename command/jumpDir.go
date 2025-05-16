@@ -27,6 +27,7 @@ func JumpDir() {
 		log.Fatal(err)
 	}
 
+	// 生成find命令的参数
 	var cmdInput strings.Builder
 	for _, item := range config.Folders {
 		ignores := append(config.Ignores, item.Ignores...)
