@@ -26,7 +26,34 @@ func RunFZF(input string) (string, error) {
 	fzf.Stdout = io.MultiWriter(pts, &buf) // 实时显示并捕获
 
 	fzf.Stderr = os.Stderr
-	fzf.Stdin = io.MultiReader(strings.NewReader(input)) // 允许接收键盘输入
+	fzf.Stdin = strings.NewReader(input) // 允许接收键盘输入
+
+	// 执行命令并等待完成
+	if err := fzf.Run(); err != nil {
+		return "", err
+	}
+
+	// 返回清理后的结果
+	return strings.TrimSpace(buf.String()), nil
+}
+
+func RunFZFStream(reader io.Reader) (string, error) {
+	// 创建伪终端
+	ptm, pts, err := pty.Open()
+	if err != nil {
+		return "", err
+	}
+	defer ptm.Close()
+	defer pts.Close()
+
+	// 创建结果缓冲区
+	// 配置fzf命令
+	var buf bytes.Buffer
+	fzf := exec.Command("fzf", "--ansi")
+	fzf.Stdout = io.MultiWriter(pts, &buf) // 实时显示并捕获
+
+	fzf.Stderr = os.Stderr
+	fzf.Stdin = reader // 允许接收键盘输入
 
 	// 执行命令并等待完成
 	if err := fzf.Run(); err != nil {
