@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 	"os"
@@ -91,24 +92,21 @@ func RunCMD(input string) (string, error) {
 	return strings.TrimSpace(buf.String()), nil
 }
 
-// 专用于捕获fzf输出的函数
-// func RunFZF(input string) (string, error) {
-// 	cmd := exec.Command("fzf", "--ansi")
-// 	cmd.Stdin = strings.NewReader(input)
+func RunCMDInSteam(input string, fn func(string)) {
+	cmd := exec.Command("bash", "-c", input)
+	cmd.Stderr = os.Stderr
+	cmdOut, _ := cmd.StdoutPipe()
+	_ = cmd.Start()
 
-// 	// 创建同时输出到终端和缓冲区的多路写入器
-// 	var buf bytes.Buffer
-// 	cmd.Stdout = io.MultiWriter(os.Stdout, &buf) // 实时显示并捕获
-// 	cmd.Stderr = os.Stderr                       // 错误直接显示
+	scanner := bufio.NewScanner(cmdOut)
 
-// 	// 执行命令并等待完成
-// 	if err := cmd.Run(); err != nil {
-// 		return "", err
-// 	}
+	for scanner.Scan() {
+		line := scanner.Text()
+		fn(line)
+	}
 
-// 	// 返回清理后的选择结果
-// 	return strings.TrimSpace(buf.String()), nil
-// }
+	cmd.Wait()
+}
 
 // 辅助函数：判断是否用户取消操作
 func IsCanceled(err error) bool {

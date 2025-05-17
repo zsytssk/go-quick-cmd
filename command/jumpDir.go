@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"quick-cmd/dbt"
 	"quick-cmd/utils"
@@ -27,45 +28,28 @@ func JumpDir() {
 		log.Fatal(err)
 	}
 
-	// 生成find命令的参数
-	var cmdInput strings.Builder
-	for _, item := range config.Folders {
-		ignores := append(config.Ignores, item.Ignores...)
-		ignoreStr := utils.ArrJoin(ignores, func(item string, index int) string {
-			if index == 0 {
-				return fmt.Sprintf(` -path %s`, item)
-			}
-			return fmt.Sprintf(` -o -path %s`, item)
-		})
-		cmdInput.WriteString(fmt.Sprintf("find %s -maxdepth %d -type d \\( %s \\)  -prune -o -print\n", item.Folder, item.Depth, ignoreStr))
-	}
+	cmdStr := buildFindStr(config)
+	reader, writer := io.Pipe()
 
-	findStr, err := utils.RunCMD(fmt.Sprintf(`(%s)`, cmdInput.String()))
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	lines := strings.Split(findStr, "\n")
-
-	var fzfInput strings.Builder
-	for _, line := range lines {
-		index := utils.ArrFindIndex(items, func(item dbt.Item, _ int) bool {
-			return item.Name == line
-		})
-		if index != -1 {
-			continue
+	go func() {
+		defer writer.Close()
+		for _, item := range items {
+			fmt.Fprintf(writer, "%s [%d:%d]\n", item.Name, item.ID, item.Priority)
 		}
-		item := dbt.Item{ID: -1, Name: line, Priority: 0}
-		items = append(items, item)
-	}
+		utils.RunCMDInSteam(cmdStr, func(line string) {
+			index := utils.ArrFindIndex(items, func(item dbt.Item, _ int) bool {
+				return item.Name == line
+			})
+			if index != -1 {
+				return
+			}
+			item := dbt.Item{ID: -1, Name: line, Priority: 0}
+			items = append(items, item)
+			fmt.Fprintf(writer, "%s [%d:%d]\n", item.Name, item.ID, item.Priority)
+		})
+	}()
 
-	// 构建fzf输入
-
-	for _, item := range items {
-		fzfInput.WriteString(fmt.Sprintf("%s [%d:%d]\n", item.Name, item.ID, item.Priority))
-	}
-
-	selected, err := utils.RunFZF(fzfInput.String())
+	selected, err := utils.RunFZFStream(reader)
 
 	if err != nil {
 		if utils.IsCanceled(err) { // 检查是否用户取消
@@ -92,4 +76,20 @@ func JumpDir() {
 	dbt.UpdateDirPriority(db, item)
 
 	fmt.Print(`cd `, item.Name)
+}
+
+func buildFindStr(config utils.Config) string {
+	var cmdInput strings.Builder
+	for _, item := range config.Folders {
+		ignores := append(config.Ignores, item.Ignores...)
+		ignoreStr := utils.ArrJoin(ignores, func(item string, index int) string {
+			if index == 0 {
+				return fmt.Sprintf(` -path %s`, item)
+			}
+			return fmt.Sprintf(` -o -path %s`, item)
+		})
+		cmdInput.WriteString(fmt.Sprintf("find %s -maxdepth %d -type d \\( %s \\)  -prune -o -print\n", item.Folder, item.Depth, ignoreStr))
+	}
+
+	return cmdInput.String()
 }
