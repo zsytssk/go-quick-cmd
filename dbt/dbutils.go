@@ -142,6 +142,10 @@ func GetItems(db *sql.DB, tableName string) (items []Item, err error) {
 		items = append(items, it)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("迭代记录时出错: %w", err)
+	}
+
 	return
 }
 

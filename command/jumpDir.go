@@ -14,6 +14,7 @@ func JumpDir() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// 命令行名称.db -> sqlite 文件
 	dbPath, err := utils.GetCurDirFileName("db")
 	if err != nil {
 		log.Fatal(err)
@@ -22,6 +23,7 @@ func JumpDir() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
 	items, err := dbt.GetDir(db)
 	if err != nil {
@@ -30,6 +32,7 @@ func JumpDir() {
 
 	cmdStr := buildFindStr(config)
 	reader, writer := io.Pipe()
+	defer reader.Close()
 
 	go func() {
 		defer writer.Close()
