@@ -3,31 +3,35 @@ package command
 import (
 	"fmt"
 	"io"
-	"log"
 	"quick-cmd/dbt"
 	"quick-cmd/utils"
 	"strings"
 )
 
-func JumpDir() {
+// JumpDirCommand 实现了目录跳转命令
+type JumpDirCommand struct {
+	*BaseCommand
+}
+
+// NewJumpDirCommand 创建新的目录跳转命令
+func NewJumpDirCommand() (*JumpDirCommand, error) {
+	base, err := NewBaseCommand("jumpDir")
+	if err != nil {
+		return nil, err
+	}
+	return &JumpDirCommand{BaseCommand: base}, nil
+}
+
+// Execute 执行目录跳转命令
+func (j *JumpDirCommand) Execute() error {
 	config, err := utils.GetConfig()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to get config: %w", err)
 	}
-	// 命令行名称.db -> sqlite 文件
-	dbPath, err := utils.GetCurDirFileName("db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	db, err := dbt.Init(dbPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
 
-	items, err := dbt.GetDir(db)
+	items, err := dbt.GetDir(j.DB)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to get dir items: %w", err)
 	}
 
 	cmdStr := buildFindStr(config)
@@ -53,18 +57,15 @@ func JumpDir() {
 	}()
 
 	selected, err := utils.RunFZFStream(reader)
-
 	if err != nil {
-		if utils.IsCanceled(err) { // 检查是否用户取消
-			log.Println("选择已取消")
-			return
+		if utils.IsCanceled(err) {
+			return nil
 		}
-		log.Fatal(err)
+		return fmt.Errorf("failed to run fzf: %w", err)
 	}
 
 	if selected == "" {
-		log.Println("未选择任何项目")
-		return
+		return nil
 	}
 
 	index := utils.ArrFindIndex(items, func(item dbt.Item, _ int) bool {
@@ -72,15 +73,19 @@ func JumpDir() {
 	})
 
 	if index == -1 {
-		log.Println("find item index = ", selected)
-		return
+		return fmt.Errorf("item not found: %s", selected)
 	}
+
 	item := items[index]
-	dbt.UpdateDirPriority(db, item)
+	if err := dbt.UpdateDirPriority(j.DB, item); err != nil {
+		return fmt.Errorf("failed to update priority: %w", err)
+	}
 
 	fmt.Print(`cd `, item.Name)
+	return nil
 }
 
+// buildFindStr 构建find命令字符串
 func buildFindStr(config utils.Config) string {
 	var cmdInput strings.Builder
 	for _, item := range config.Folders {
@@ -93,6 +98,5 @@ func buildFindStr(config utils.Config) string {
 		})
 		cmdInput.WriteString(fmt.Sprintf("find %s -maxdepth %d -type d \\( %s \\)  -prune -o -print\n", item.Folder, item.Depth, ignoreStr))
 	}
-
 	return cmdInput.String()
 }

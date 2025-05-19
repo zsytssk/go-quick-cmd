@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"quick-cmd/command"
 	"quick-cmd/utils"
 	"slices"
@@ -13,7 +14,6 @@ import (
 var supportCmd = []string{"bashHistory", "jumpDir"}
 
 func main() {
-
 	cmd := utils.GetCmd()
 	if cmd == nil {
 		fmt.Println(`请输入执行命令 "bashHistory" | "jumpDir"`)
@@ -24,12 +24,23 @@ func main() {
 		return
 	}
 
+	var cmdImpl command.Command
+	var err error
+
 	switch *cmd {
 	case "bashHistory":
-		command.HashHistory()
+		cmdImpl, err = command.NewBashHistoryCommand()
 	case "jumpDir":
-		command.JumpDir()
+		cmdImpl, err = command.NewJumpDirCommand()
 	default:
-		command.JumpDir()
+		cmdImpl, err = command.NewJumpDirCommand()
+	}
+
+	if err != nil {
+		log.Fatalf("Failed to create command: %v", err)
+	}
+
+	if err := cmdImpl.Execute(); err != nil {
+		log.Fatalf("Failed to execute command: %v", err)
 	}
 }

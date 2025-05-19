@@ -2,28 +2,32 @@ package command
 
 import (
 	"fmt"
-	"log"
 	"quick-cmd/dbt"
 	"quick-cmd/utils"
 	"strings"
 )
 
-func HashHistory() {
-	dbPath, err := utils.GetCurDirFileName("db")
+// BashHistoryCommand 实现了bash历史命令
+type BashHistoryCommand struct {
+	*BaseCommand
+}
+
+// NewBashHistoryCommand 创建新的bash历史命令
+func NewBashHistoryCommand() (*BashHistoryCommand, error) {
+	base, err := NewBaseCommand("bashHistory")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	db, err := dbt.Init(dbPath)
+	return &BashHistoryCommand{BaseCommand: base}, nil
+}
+
+// Execute 执行bash历史命令
+func (b *BashHistoryCommand) Execute() error {
+	items, err := dbt.GetHistory(b.DB)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to get history items: %w", err)
 	}
 
-	items, err := dbt.GetHistory(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// 构建fzf输入
 	var fzfInput strings.Builder
 	for _, item := range items {
 		fzfInput.WriteString(fmt.Sprintf("%s [%d:%d]\n", item.Name, item.ID, item.Priority))
@@ -31,16 +35,14 @@ func HashHistory() {
 
 	selected, err := utils.RunFZF(fzfInput.String())
 	if err != nil {
-		if utils.IsCanceled(err) { // 检查是否用户取消
-			log.Println("选择已取消")
-			return
+		if utils.IsCanceled(err) {
+			return nil
 		}
-		log.Fatal(err)
+		return fmt.Errorf("failed to run fzf: %w", err)
 	}
 
 	if selected == "" {
-		log.Println("未选择任何项目")
-		return
+		return nil
 	}
 
 	index := utils.ArrFindIndex(items, func(item dbt.Item, _ int) bool {
@@ -48,10 +50,14 @@ func HashHistory() {
 	})
 
 	if index == -1 {
-		log.Println("find item index = ", selected)
-		return
+		return fmt.Errorf("item not found: %s", selected)
 	}
+
 	item := items[index]
-	dbt.UpdateHistoryPriority(db, item)
+	if err := dbt.UpdateHistoryPriority(b.DB, item); err != nil {
+		return fmt.Errorf("failed to update priority: %w", err)
+	}
+
 	fmt.Print(item.Name)
+	return nil
 }
