@@ -6,6 +6,13 @@
 
 - @ques 能不能像后端代码一样通过定义 struct 来控制 table 和插入更新数据？
 
+```
+getList
+delete
+update
+insert
+```
+
 ### end
 
 - @ques 为了避免卡顿 能不能使用 stream 传递数据?

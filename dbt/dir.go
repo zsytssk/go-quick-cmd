@@ -97,7 +97,6 @@ func UpdateDirPriority(db *sql.DB, item Item) (err error) {
 		// return UpdateItemPriority(db, "dir", item.ID, item.Priority+1)
 		return UpdateItem(db, "dir", item.ID, map[string]interface{}{
 			"priority": item.Priority + 1,
-			"hide":     0,
 		})
 	}
 	return InsertItemPriority(db, "dir", item.Name, item.Priority+1)
