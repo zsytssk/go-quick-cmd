@@ -127,16 +127,20 @@ func GetItems(db *sql.DB, tableName string) (items []Item, err error) {
 }
 
 func checkTableExist(db *sql.DB, tableName string) (exist bool) {
-	// 执行查询，检查 sqlite_master 表中是否存在指定名称的表
-	var count int
-	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)
-	err := db.QueryRow(query).Scan(&count)
+	var name string
+	query := "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
+	err := db.QueryRow(query, tableName).Scan(&name)
+
 	if err != nil {
+		if err == sql.ErrNoRows {
+			// 表不存在
+			return false
+		}
+		// 其他错误
+		log.Printf("检查表存在时出错: %v", err)
 		return false
 	}
-
-	// 如果查询结果大于 0，则表示表存在
-	return count > 0
+	return true
 }
 
 func createTable(db *sql.DB, sqlStmt string) (sus bool, err error) {

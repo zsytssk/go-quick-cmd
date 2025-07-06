@@ -2,15 +2,27 @@
 
 - @ques 有什么像 fzf 但是能设置权重的工具
 
+- @todo struct -> map
+  - 支持 tag json
+- @todo map -> struct
+
 ## 2025-05-02 17:51:49
 
 - @ques 能不能像后端代码一样通过定义 struct 来控制 table 和插入更新数据？
 
 ```
-getList
-delete
-update
-insert
+InitTable
+GetList
+Delete
+Update
+Insert
+```
+
+```go
+
+func (DeviceShutdownOperation) TableName() string {
+	return "device_shutdown_operation"
+}
 ```
 
 ### end

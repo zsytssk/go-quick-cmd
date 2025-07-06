@@ -7,7 +7,6 @@ import (
 	"quick-cmd/utils"
 	"slices"
 
-	// 新增pty支持
 	_ "github.com/mattn/go-sqlite3"
 )
 
