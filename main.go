@@ -23,23 +23,17 @@ func main() {
 		return
 	}
 
-	var cmdImpl command.Command
 	var err error
 
 	switch *cmd {
 	case "bashHistory":
-		cmdImpl, err = command.NewBashHistoryCommand()
-	case "jumpDir":
-		cmdImpl, err = command.NewJumpDirCommand()
+		err = command.BashHistory()
 	default:
-		cmdImpl, err = command.NewJumpDirCommand()
+		err = command.JumpDir()
 	}
 
 	if err != nil {
-		log.Fatalf("Failed to create command: %v", err)
+		log.Fatalf("Failed to run command: %v", err)
 	}
 
-	if err := cmdImpl.Execute(); err != nil {
-		log.Fatalf("Failed to execute command: %v", err)
-	}
 }

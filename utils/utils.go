@@ -2,9 +2,15 @@ package utils
 
 import (
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 )
+
+func IsZero(v interface{}) bool {
+	val := reflect.ValueOf(v)
+	return val.IsZero() // Go 1.13+
+}
 
 func GetCmd() *string {
 	if len(os.Args) == 1 {

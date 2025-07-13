@@ -4,26 +4,25 @@ import (
 	"fmt"
 	"quick-cmd/dbt"
 	"quick-cmd/utils"
+	"sort"
 	"strings"
 )
 
-// BashHistoryCommand 实现了bash历史命令
-type BashHistoryCommand struct {
-	*BaseCommand
+type HistoryItem struct {
+	Item
 }
 
-// NewBashHistoryCommand 创建新的bash历史命令
-func NewBashHistoryCommand() (*BashHistoryCommand, error) {
-	base, err := NewBaseCommand("bashHistory")
+func (HistoryItem) TableName() string {
+	return "history"
+}
+
+func BashHistory() (err error) {
+	db, err := getDb()
 	if err != nil {
-		return nil, err
+		return
 	}
-	return &BashHistoryCommand{BaseCommand: base}, nil
-}
-
-// Execute 执行bash历史命令
-func (b *BashHistoryCommand) Execute() error {
-	items, err := dbt.GetHistory(b.DB)
+	dm := dbt.NewModel(db, &HistoryItem{})
+	items, err := GetHistory(dm)
 	if err != nil {
 		return fmt.Errorf("failed to get history items: %w", err)
 	}
@@ -45,7 +44,7 @@ func (b *BashHistoryCommand) Execute() error {
 		return nil
 	}
 
-	index := utils.ArrFindIndex(items, func(item dbt.Item, _ int) bool {
+	index := utils.ArrFindIndex(items, func(item HistoryItem, _ int) bool {
 		return selected == fmt.Sprintf("%s [%d:%d]", item.Name, item.ID, item.Priority)
 	})
 
@@ -54,10 +53,64 @@ func (b *BashHistoryCommand) Execute() error {
 	}
 
 	item := items[index]
-	if err := dbt.UpdateHistoryPriority(b.DB, item); err != nil {
-		return fmt.Errorf("failed to update priority: %w", err)
+	if err := dm.Save(item).Error; err != nil {
+		return fmt.Errorf("failed to save item: %w", err)
 	}
 
 	fmt.Print(item.Name)
-	return nil
+	return
+}
+
+func GetHistory(dm *dbt.Model) (items []HistoryItem, err error) {
+	lineMap, err := utils.ReadFile("~/.bash_history")
+
+	if err != nil {
+		return
+	}
+
+	for key := range lineMap {
+		if strings.HasPrefix(key, "cd") && !strings.Contains(key, "&&") {
+			delete(lineMap, key)
+			continue
+		}
+	}
+	var count int64
+	err = dm.Count(&count).Error
+	if err != nil {
+		return
+	}
+	if count == 0 {
+		for key := range lineMap {
+			if strings.HasPrefix(key, "cd") && !strings.Contains(key, "&&") {
+				dm.Save(DirItem{Item{-1, key, lineMap[key], false}})
+				continue
+			}
+		}
+	}
+	err = dm.Order("ORDER BY priority DESC").Find(&items).Error
+	if err != nil {
+		return
+	}
+	for key, count := range lineMap {
+		index := utils.ArrFindIndex(items, func(item HistoryItem, _ int) bool {
+			return item.Name == key
+		})
+		if index != -1 {
+			continue
+		}
+		// fmt.Println("test:>", key, count)
+		item := HistoryItem{Item{-1, key, count, false}}
+		items = append(items, item)
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Priority > items[j].Priority
+	})
+
+	// index := utils.FindItemIndex(items, func(item Item, _ int) bool {
+	// 	return item.Name == "rm ./go-test"
+	// })
+	// fmt.Println("test:>", items)
+
+	return
 }

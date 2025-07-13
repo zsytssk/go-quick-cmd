@@ -5,33 +5,32 @@ import (
 	"io"
 	"quick-cmd/dbt"
 	"quick-cmd/utils"
+	"sort"
 	"strings"
 )
 
-// JumpDirCommand 实现了目录跳转命令
-type JumpDirCommand struct {
-	*BaseCommand
+type DirItem struct {
+	Item
 }
 
-// NewJumpDirCommand 创建新的目录跳转命令
-func NewJumpDirCommand() (*JumpDirCommand, error) {
-	base, err := NewBaseCommand("jumpDir")
+func (DirItem) TableName() string {
+	return "dir"
+}
+
+func JumpDir() (err error) {
+	db, err := getDb()
 	if err != nil {
-		return nil, err
+		return
 	}
-	return &JumpDirCommand{BaseCommand: base}, nil
-}
+	dm := dbt.NewModel(db, &DirItem{})
+	list, err := getDirHistory(dm)
+	if err != nil {
+		return
+	}
 
-// Execute 执行目录跳转命令
-func (j *JumpDirCommand) Execute() error {
 	config, err := utils.GetConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
-	}
-
-	items, err := dbt.GetDir(j.DB)
-	if err != nil {
-		return fmt.Errorf("failed to get dir items: %w", err)
 	}
 
 	cmdStr := buildFindStr(config)
@@ -40,18 +39,18 @@ func (j *JumpDirCommand) Execute() error {
 
 	go func() {
 		defer writer.Close()
-		for _, item := range items {
+		for _, item := range list {
 			fmt.Fprintf(writer, "%s [%d:%d]\n", item.Name, item.ID, item.Priority)
 		}
 		utils.RunCMDInSteam(cmdStr, func(line string) {
-			index := utils.ArrFindIndex(items, func(item dbt.Item, _ int) bool {
+			index := utils.ArrFindIndex(list, func(item DirItem, _ int) bool {
 				return item.Name == line
 			})
 			if index != -1 {
 				return
 			}
-			item := dbt.Item{ID: -1, Name: line, Priority: 0}
-			items = append(items, item)
+			item := DirItem{Item{ID: -1, Name: line, Priority: 0, Hide: false}}
+			list = append(list, item)
 			fmt.Fprintf(writer, "%s [%d:%d]\n", item.Name, item.ID, item.Priority)
 		})
 	}()
@@ -68,7 +67,7 @@ func (j *JumpDirCommand) Execute() error {
 		return nil
 	}
 
-	index := utils.ArrFindIndex(items, func(item dbt.Item, _ int) bool {
+	index := utils.ArrFindIndex(list, func(item DirItem, _ int) bool {
 		return selected == fmt.Sprintf("%s [%d:%d]", item.Name, item.ID, item.Priority)
 	})
 
@@ -76,13 +75,59 @@ func (j *JumpDirCommand) Execute() error {
 		return fmt.Errorf("item not found: %s", selected)
 	}
 
-	item := items[index]
-	if err := dbt.UpdateDirPriority(j.DB, item); err != nil {
-		return fmt.Errorf("failed to update priority: %w", err)
+	item := list[index]
+	if err := dm.Save(item).Error; err != nil {
+		return fmt.Errorf("failed to save item: %w", err)
 	}
 
 	fmt.Print(`cd `, item.Name)
 	return nil
+}
+
+func getDirHistory(dm *dbt.Model) (list []DirItem, err error) {
+	oldMap, err := utils.ReadFile("~/.bash_history")
+	if err != nil {
+		return
+	}
+	newMap := make(map[string]int)
+	for key, v := range oldMap {
+		if !strings.HasPrefix(key, "cd") {
+			continue
+		}
+		if strings.Contains(key, "&&") || strings.Contains(key, "../") || strings.Contains(key, "./") {
+			continue
+		}
+		newKey := utils.ExtractPath(key)
+		if strings.TrimSpace(newKey) == "" {
+			continue
+		}
+		if !utils.PathExists(newKey) {
+			continue
+		}
+		newMap[newKey] = v
+
+	}
+	err = dm.Order("ORDER BY priority DESC").Find(&list).Error
+	if err != nil {
+		return
+	}
+
+	for key, count := range newMap {
+		index := utils.ArrFindIndex(list, func(item DirItem, _ int) bool {
+			return item.Name == key
+		})
+		if index != -1 {
+			continue
+		}
+		item := DirItem{Item{-1, key, count, false}}
+		list = append(list, item)
+	}
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Priority > list[j].Priority
+	})
+
+	return
 }
 
 // buildFindStr 构建find命令字符串
