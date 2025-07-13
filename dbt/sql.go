@@ -43,10 +43,13 @@ func formatSQLDefaultValue(t reflect.Type) string {
 	}
 }
 
-func GoTypeToSQLType(goType reflect.Type) string {
+func GoTypeToSQLType(goType reflect.Type, isPrimary bool) string {
 	switch goType.Kind() {
 	case reflect.Int, reflect.Int32:
-		return "INTEGER"
+		if isPrimary {
+			return "INTEGER"
+		}
+		return "INT"
 	case reflect.Int64:
 		return "BIGINT"
 	case reflect.Uint, reflect.Uint64:

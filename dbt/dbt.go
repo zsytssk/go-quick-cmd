@@ -248,7 +248,7 @@ func collectFields(obj interface{}) (connects []map[string]interface{}) {
 		}
 		dbType := fieldType.Tag.Get("db")
 
-		sqlType := GoTypeToSQLType(fieldType.Type)
+		sqlType := GoTypeToSQLType(fieldType.Type, dbType == "primaryKey")
 		connects = append(connects, map[string]interface{}{
 			"dbType":  dbType,
 			"name":    name,

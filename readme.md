@@ -6,6 +6,10 @@
   - 支持 tag json
 - @todo map -> struct
 
+## 2025-07-13 21:19:49
+
+IsSQLTypeCompatible 改写
+
 ## 2025-05-02 17:51:49
 
 - @ques 能不能像后端代码一样通过定义 struct 来控制 table 和插入更新数据？
