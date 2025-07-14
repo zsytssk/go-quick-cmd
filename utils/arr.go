@@ -14,6 +14,15 @@ func ArrFindIndex[T any](arr []T, fn func(item T, index int) bool) (index int) {
 	return -1
 }
 
+func ArrFind[T any](arr []T, fn func(item T, index int) bool) (result T, found bool) {
+	for index, item := range arr {
+		if fn(item, index) {
+			return item, true
+		}
+	}
+	return
+}
+
 func ArrJoin[T any](arr []T, fn func(item T, index int) string) string {
 	var fzfInput strings.Builder
 

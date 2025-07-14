@@ -14,8 +14,8 @@ import (
 type ActionKind uint
 
 const (
-	Invalid ActionKind = iota
-	Delete
+	ActionInvalid ActionKind = iota
+	ActionDelete
 )
 
 func RunFZF(input string) (action ActionKind, selected string, err error) {
@@ -43,11 +43,11 @@ func RunFZF(input string) (action ActionKind, selected string, err error) {
 
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	if lines[0] == "ctrl-d" {
-		action = Delete
+		action = ActionDelete
 		selected = lines[1]
 		return
 	}
-	action = Invalid
+	action = ActionInvalid
 	selected = lines[0]
 	// 返回清理后的结果
 	return
@@ -78,11 +78,11 @@ func RunFZFStream(reader io.Reader) (action ActionKind, selected string, err err
 
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	if lines[0] == "ctrl-d" {
-		action = Delete
+		action = ActionDelete
 		selected = lines[1]
 		return
 	}
-	action = Invalid
+	action = ActionInvalid
 	selected = lines[0]
 
 	// 返回清理后的结果

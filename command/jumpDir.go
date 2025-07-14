@@ -70,16 +70,15 @@ func JumpDir() (err error) {
 		return nil
 	}
 
-	index := utils.ArrFindIndex(list, func(item DirItem, _ int) bool {
+	item, found := utils.ArrFind(list, func(item DirItem, _ int) bool {
 		return selected == fmt.Sprintf("%s [%d:%d]", item.Name, item.ID, item.Priority)
 	})
 
-	if index == -1 {
+	if !found {
 		return fmt.Errorf("item not found: %s", selected)
 	}
 
-	item := list[index]
-	if action == utils.Delete {
+	if action == utils.ActionDelete {
 		item.Hide = true
 		if err := dm.Save(item).Error; err != nil {
 			return fmt.Errorf("failed to save item: %w", err)
