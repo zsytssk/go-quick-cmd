@@ -2,17 +2,40 @@
 
 - @ques 有什么像 fzf 但是能设置权重的工具
 
+## 2025-07-14 14:44:03
+
+- @todo hide
+  - fzf 监听快捷键
+
+---
+
+- @todo 集合命令 -> 通过名称区分
+  - unionCommand
+  - name content
+  - 激活到 bashHistory 中
+
+```
+ghostty --working-directory=/home/zsy/Documents/zsy/job/wms-background/web -e "npm run serve" & ghostty --working-directory=/home/zsy/Documents/zsy/job/wms-background/server -e "go build main.go && ./main"
+```
+
+```
+nohup ghostty --working-directory=/home/zsy/Documents/zsy/job/wms-background/web \
+  -e "npm run serve" > /dev/null 2>&1 &
+
+nohup ghostty --working-directory=/home/zsy/Documents/zsy/job/wms-background/server \
+  -e "go build main.go && ./main" > /dev/null 2>&1 &
+```
+
+## 2025-07-13 21:19:49
+
+---
+
 - @todo struct -> map
   - 支持 tag json
 - @todo map -> struct
 
-## 2025-07-13 21:19:49
-
 `FieldItem` 实际应用
-
----
-
-`StructToSQLCreateTable` -> 默认值 ` NOT NULL DEFAULT`
+`StructToSQLCreateTable` -> 默认值 `NOT NULL DEFAULT`
 IsSQLTypeCompatible 改写
 SyncTableColumns 只要执行一次
 
@@ -29,7 +52,6 @@ Insert
 ```
 
 ```go
-
 func (DeviceShutdownOperation) TableName() string {
 	return "device_shutdown_operation"
 }

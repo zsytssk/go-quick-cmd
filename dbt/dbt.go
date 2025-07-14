@@ -144,7 +144,7 @@ func StructToSQLGetList[T TableStruct](db *sql.DB, obj T) (list []T, err error) 
 	fields_list := collectFields(obj)
 	var columns []string
 	for _, field := range fields_list {
-		columns = append(columns, fmt.Sprintf("%s", field.Name))
+		columns = append(columns, field.Name)
 	}
 	sqlStr := fmt.Sprintf("SELECT %s FROM %s",
 		strings.Join(columns, ", "),
@@ -319,7 +319,7 @@ func SyncTableColumns(db *sql.DB, obj TableStruct) (err error) {
 	for _, column := range columns {
 		if utils.ArrFindIndex(fields_list, func(field FieldItem, index int) bool {
 			return field.Name == column.Name &&
-				IsSQLTypeCompatible(column.Ctype, field.OriType.(reflect.Type))
+				IsSQLTypeCompatible(column.Ctype, field.OriType)
 		}) != -1 {
 			continue
 		}
@@ -336,7 +336,7 @@ func SyncTableColumns(db *sql.DB, obj TableStruct) (err error) {
 	for _, field := range fields_list {
 		if utils.ArrFindIndex(columns, func(column TableColumn, index int) bool {
 			return column.Name == field.Name &&
-				IsSQLTypeCompatible(column.Ctype, field.OriType.(reflect.Type))
+				IsSQLTypeCompatible(column.Ctype, field.OriType)
 		}) != -1 {
 			continue
 		}
@@ -347,7 +347,7 @@ func SyncTableColumns(db *sql.DB, obj TableStruct) (err error) {
 			obj.TableName(),
 			field.Name,
 			field.SqlType,
-			formatSQLDefaultValue(field.OriType.(reflect.Type)),
+			formatSQLDefaultValue(field.OriType),
 		))
 	}
 

@@ -10,6 +10,7 @@ import (
 
 type HistoryItem struct {
 	Item
+	Content string
 }
 
 func (HistoryItem) TableName() string {
@@ -57,6 +58,10 @@ func BashHistory() (err error) {
 	if err := dm.Save(item).Error; err != nil {
 		return fmt.Errorf("failed to save item: %w", err)
 	}
+	if len(item.Content) > 0 {
+		fmt.Print(item.Content)
+		return
+	}
 
 	fmt.Print(item.Name)
 	return
@@ -100,7 +105,7 @@ func GetHistory(dm *dbt.Model) (items []HistoryItem, err error) {
 			continue
 		}
 		// fmt.Println("test:>", key, count)
-		item := HistoryItem{Item{-1, key, count, false}}
+		item := HistoryItem{Item{-1, key, count, false}, ""}
 		items = append(items, item)
 	}
 

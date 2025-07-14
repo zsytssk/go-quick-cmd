@@ -82,7 +82,7 @@ func JumpDir() (err error) {
 	}
 
 	fmt.Print(`cd `, item.Name)
-	return nil
+	return
 }
 
 func getDirHistory(dm *dbt.Model) (list []DirItem, err error) {

@@ -29,15 +29,14 @@ func formatSQLValue(val interface{}) string {
 }
 
 func formatSQLDefaultValue(t reflect.Type) string {
-	switch t.Kind() {
-	case reflect.String:
-		return "''" // 空字符串要写成 ''，不能直接为空
-	case reflect.Int, reflect.Int64, reflect.Float64:
+	k := t.Kind()
+	switch {
+	case k == reflect.String:
+		return "''"
+	case isIntKind(k), isUintKind(k), isFloatKind(k):
 		return "0"
-	case reflect.Bool:
+	case k == reflect.Bool:
 		return "false"
-	case reflect.Pointer, reflect.Slice, reflect.Map:
-		return "NULL"
 	default:
 		return "NULL"
 	}
@@ -81,7 +80,7 @@ func IsSQLTypeCompatible(sqlType string, goType reflect.Type) bool {
 	case "INTEGER", "INT", "BIGINT", "TINYINT":
 		return isIntKind(goType.Kind())
 	case "FLOAT", "DOUBLE", "REAL", "DECIMAL":
-		return goType.Kind() == reflect.Float32 || goType.Kind() == reflect.Float64
+		return isFloatKind(goType.Kind())
 	case "BOOLEAN", "BOOL", "TINYINT(1)":
 		return goType.Kind() == reflect.Bool
 	case "VARCHAR", "CHAR", "TEXT", "LONGTEXT", "MEDIUMTEXT":
@@ -96,15 +95,14 @@ func IsSQLTypeCompatible(sqlType string, goType reflect.Type) bool {
 	}
 }
 
-func isIntKind(kind reflect.Kind) bool {
-	return kind == reflect.Int ||
-		kind == reflect.Int8 ||
-		kind == reflect.Int16 ||
-		kind == reflect.Int32 ||
-		kind == reflect.Int64 ||
-		kind == reflect.Uint ||
-		kind == reflect.Uint8 ||
-		kind == reflect.Uint16 ||
-		kind == reflect.Uint32 ||
-		kind == reflect.Uint64
+func isIntKind(k reflect.Kind) bool {
+	return k >= reflect.Int && k <= reflect.Int64
+}
+
+func isUintKind(k reflect.Kind) bool {
+	return k >= reflect.Uint && k <= reflect.Uintptr
+}
+
+func isFloatKind(k reflect.Kind) bool {
+	return k == reflect.Float32 || k == reflect.Float64
 }
