@@ -38,6 +38,12 @@ func NewModel(db *sql.DB, obj TableStruct) *Model {
 			m.Error = err
 			return m
 		}
+	} else {
+		err := SyncTableColumns(m.DB, m.Obj)
+		if err != nil {
+			m.Error = err
+			return m
+		}
 	}
 	return m
 }
@@ -139,11 +145,6 @@ func (m *Model) Delete(value interface{}) *Model {
 }
 
 func (m *Model) First(first interface{}) *Model {
-	err := SyncTableColumns(m.DB, m.Obj)
-	if err != nil {
-		m.Error = err
-		return m
-	}
 	conditions := append([]Condition{{
 		ConditionType: "order",
 		Query:         "LIMIT 1",
@@ -168,7 +169,7 @@ func (m *Model) First(first interface{}) *Model {
 		// 添加字段地址作为 Scan 参数
 		scanArgs = append(scanArgs, structField.Addr().Interface())
 	}
-	err = m.DB.QueryRow(sql).Scan(scanArgs...)
+	err := m.DB.QueryRow(sql).Scan(scanArgs...)
 	m.Error = err
 	return m
 }
@@ -181,11 +182,6 @@ func (m *Model) Count(count *int64) *Model {
 	return m
 }
 func (m *Model) Find(dest interface{}) *Model {
-	err := SyncTableColumns(m.DB, m.Obj)
-	if err != nil {
-		m.Error = err
-		return m
-	}
 	destVal := reflect.ValueOf(dest)
 	if destVal.Kind() == reflect.Ptr {
 		destVal = destVal.Elem() // 解引用 *slice => slice

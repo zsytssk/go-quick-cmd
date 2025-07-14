@@ -41,7 +41,13 @@ func StructToSQLCreateTable(db *sql.DB, obj TableStruct) (err error) {
 			columns = append(columns, fmt.Sprintf("  %s %s PRIMARY KEY", field["name"], field["sqlType"]))
 			continue
 		}
-		columns = append(columns, fmt.Sprintf("  %s %s", field["name"], field["sqlType"]))
+		columns = append(
+			columns,
+			fmt.Sprintf("  %s %s NOT NULL DEFAULT %s",
+				field["name"],
+				field["sqlType"],
+				formatSQLDefaultValue(field["oriType"].(reflect.Type)),
+			))
 	}
 
 	sqlStr := fmt.Sprintf("CREATE TABLE %s (\n%s\n);",

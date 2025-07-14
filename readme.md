@@ -8,7 +8,13 @@
 
 ## 2025-07-13 21:19:49
 
+`FieldItem` 实际应用
+
+---
+
+`StructToSQLCreateTable` -> 默认值 ` NOT NULL DEFAULT`
 IsSQLTypeCompatible 改写
+SyncTableColumns 只要执行一次
 
 ## 2025-05-02 17:51:49
 
