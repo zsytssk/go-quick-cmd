@@ -36,17 +36,17 @@ func StructToSQLCreateTable(db *sql.DB, obj TableStruct) (err error) {
 	fields_list := collectFields(obj)
 	var columns []string
 	for _, field := range fields_list {
-		db_type := field["dbType"].(string)
+		db_type := field.DbType
 		if db_type == "primaryKey" {
-			columns = append(columns, fmt.Sprintf("  %s %s PRIMARY KEY", field["name"], field["sqlType"]))
+			columns = append(columns, fmt.Sprintf("  %s %s PRIMARY KEY", field.Name, field.SqlType))
 			continue
 		}
 		columns = append(
 			columns,
 			fmt.Sprintf("  %s %s NOT NULL DEFAULT %s",
-				field["name"],
-				field["sqlType"],
-				formatSQLDefaultValue(field["oriType"].(reflect.Type)),
+				field.Name,
+				field.SqlType,
+				formatSQLDefaultValue(field.OriType),
 			))
 	}
 
@@ -71,13 +71,13 @@ func StructToSQLInsert(db *sql.DB, obj TableStruct) (err error) {
 	var placeholders []string
 	var values []interface{}
 	for _, field := range fields_list {
-		db_type := field["dbType"].(string)
+		db_type := field.DbType
 		if db_type == "primaryKey" {
 			continue
 		}
-		columns = append(columns, field["name"].(string))
+		columns = append(columns, field.Name)
 		placeholders = append(placeholders, "?")
-		values = append(values, field["value"])
+		values = append(values, field.Value)
 	}
 	sqlStr := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);",
 		strings.ToLower(obj.TableName()),
@@ -95,15 +95,15 @@ func StructToSQLUpdate(db *sql.DB, obj TableStruct, ignore_zero bool) (err error
 	var columns []string
 	var where_str string
 	for _, field := range fields_list {
-		db_type := field["dbType"].(string)
+		db_type := field.DbType
 		if db_type == "primaryKey" {
-			where_str = fmt.Sprintf(" %s = %v", field["name"], formatSQLValue(field["value"]))
+			where_str = fmt.Sprintf(" %s = %v", field.Name, formatSQLValue(field.Value))
 			continue
 		}
-		if ignore_zero && utils.IsZero(field["value"]) {
+		if ignore_zero && utils.IsZero(field.Value) {
 			continue
 		}
-		columns = append(columns, fmt.Sprintf("  %s = %v", field["name"], formatSQLValue(field["value"])))
+		columns = append(columns, fmt.Sprintf("  %s = %v", field.Name, formatSQLValue(field.Value)))
 	}
 	sqlStr := fmt.Sprintf("UPDATE %s\nSET %s \n WHERE %s;",
 		strings.ToLower(obj.TableName()),
@@ -123,9 +123,9 @@ func StructToSQLDelete(db *sql.DB, obj TableStruct) (err error) {
 	fields_list := collectFields(obj)
 	var where_str string
 	for _, field := range fields_list {
-		db_type := field["dbType"].(string)
+		db_type := field.DbType
 		if db_type == "primaryKey" {
-			where_str = fmt.Sprintf("  %s = %v", field["name"], formatSQLValue(field["value"]))
+			where_str = fmt.Sprintf("  %s = %v", field.Name, formatSQLValue(field.Value))
 			break
 		}
 	}
@@ -144,7 +144,7 @@ func StructToSQLGetList[T TableStruct](db *sql.DB, obj T) (list []T, err error) 
 	fields_list := collectFields(obj)
 	var columns []string
 	for _, field := range fields_list {
-		columns = append(columns, fmt.Sprintf("%s", field["name"]))
+		columns = append(columns, fmt.Sprintf("%s", field.Name))
 	}
 	sqlStr := fmt.Sprintf("SELECT %s FROM %s",
 		strings.Join(columns, ", "),
@@ -162,7 +162,7 @@ func StructToSQLGetList[T TableStruct](db *sql.DB, obj T) (list []T, err error) 
 		var scanArgs []interface{}
 
 		for _, field := range fields_list {
-			fieldName := field["oriName"].(string)
+			fieldName := field.OriName
 
 			// 获取结构体中对应的字段
 			structField := elemVal.FieldByName(fieldName) // 需要转换
@@ -188,9 +188,9 @@ func CheckItemExist(db *sql.DB, obj TableStruct) (exists bool, err error) {
 	fields_list := collectFields(obj)
 	var where_str string
 	for _, field := range fields_list {
-		db_type := field["dbType"].(string)
+		db_type := field.DbType
 		if db_type == "primaryKey" {
-			where_str = fmt.Sprintf("  %s = %v", field["name"], formatSQLValue(field["value"]))
+			where_str = fmt.Sprintf("  %s = %v", field.Name, formatSQLValue(field.Value))
 			break
 		}
 	}
@@ -221,10 +221,11 @@ type FieldItem struct {
 	Name    string
 	OriName string
 	SqlType string
+	OriType reflect.Type
 	Value   interface{}
 }
 
-func collectFields(obj interface{}) (connects []map[string]interface{}) {
+func collectFields(obj interface{}) (connects []FieldItem) {
 	v := reflect.ValueOf(obj)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -255,13 +256,13 @@ func collectFields(obj interface{}) (connects []map[string]interface{}) {
 		dbType := fieldType.Tag.Get("db")
 
 		sqlType := GoTypeToSQLType(fieldType.Type, dbType == "primaryKey")
-		connects = append(connects, map[string]interface{}{
-			"dbType":  dbType,
-			"name":    name,
-			"oriName": fieldType.Name,
-			"oriType": fieldType.Type,
-			"sqlType": sqlType,
-			"value":   value,
+		connects = append(connects, FieldItem{
+			DbType:  dbType,
+			Name:    name,
+			OriName: fieldType.Name,
+			OriType: fieldType.Type,
+			SqlType: sqlType,
+			Value:   value,
 		})
 
 	}
@@ -316,9 +317,9 @@ func SyncTableColumns(db *sql.DB, obj TableStruct) (err error) {
 	fields_list := collectFields(obj)
 
 	for _, column := range columns {
-		if utils.ArrFindIndex(fields_list, func(field map[string]interface{}, index int) bool {
-			return field["name"] == column.Name &&
-				IsSQLTypeCompatible(column.Ctype, field["oriType"].(reflect.Type))
+		if utils.ArrFindIndex(fields_list, func(field FieldItem, index int) bool {
+			return field.Name == column.Name &&
+				IsSQLTypeCompatible(column.Ctype, field.OriType.(reflect.Type))
 		}) != -1 {
 			continue
 		}
@@ -334,19 +335,19 @@ func SyncTableColumns(db *sql.DB, obj TableStruct) (err error) {
 	}
 	for _, field := range fields_list {
 		if utils.ArrFindIndex(columns, func(column TableColumn, index int) bool {
-			return column.Name == field["name"] &&
-				IsSQLTypeCompatible(column.Ctype, field["oriType"].(reflect.Type))
+			return column.Name == field.Name &&
+				IsSQLTypeCompatible(column.Ctype, field.OriType.(reflect.Type))
 		}) != -1 {
 			continue
 		}
-		// fmt.Println("deleteColumns:>2", field["name"], field["sqlType"])
+		// fmt.Println("deleteColumns:>2", field.Name, field.SqlType)
 
 		_, err = db.Exec(fmt.Sprintf(
 			"ALTER TABLE %s ADD COLUMN %s %s NOT NULL DEFAULT %s;",
 			obj.TableName(),
-			field["name"],
-			field["sqlType"],
-			formatSQLDefaultValue(field["oriType"].(reflect.Type)),
+			field.Name,
+			field.SqlType,
+			formatSQLDefaultValue(field.OriType.(reflect.Type)),
 		))
 	}
 

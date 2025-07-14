@@ -13,7 +13,7 @@ type Condition struct {
 	Args          []interface{}
 }
 type TableInfo struct {
-	FieldsList []map[string]interface{}
+	FieldsList []FieldItem
 	TableName  string
 }
 
@@ -156,7 +156,7 @@ func (m *Model) First(first interface{}) *Model {
 	var scanArgs []interface{}
 
 	for _, field := range m.TableInfo.FieldsList {
-		fieldName := field["oriName"].(string)
+		fieldName := field.OriName
 
 		// 获取结构体中对应的字段
 		structField := elemVal.FieldByName(fieldName) // 需要转换
@@ -205,7 +205,7 @@ func (m *Model) Find(dest interface{}) *Model {
 		var scanArgs []interface{}
 
 		for _, field := range m.TableInfo.FieldsList {
-			fieldName := field["oriName"].(string)
+			fieldName := field.OriName
 
 			// 获取结构体中对应的字段
 			structField := elemVal.FieldByName(fieldName) // 需要转换

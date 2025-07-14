@@ -53,6 +53,7 @@ func BashHistory() (err error) {
 	}
 
 	item := items[index]
+	item.Priority = item.Priority + 1
 	if err := dm.Save(item).Error; err != nil {
 		return fmt.Errorf("failed to save item: %w", err)
 	}
