@@ -30,10 +30,13 @@ func BashHistory() (err error) {
 
 	var fzfInput strings.Builder
 	for _, item := range items {
+		if item.Hide {
+			continue
+		}
 		fzfInput.WriteString(fmt.Sprintf("%s [%d:%d]\n", item.Name, item.ID, item.Priority))
 	}
 
-	selected, err := utils.RunFZF(fzfInput.String())
+	action, selected, err := utils.RunFZF(fzfInput.String())
 	if err != nil {
 		if utils.IsCanceled(err) {
 			return nil
@@ -54,6 +57,14 @@ func BashHistory() (err error) {
 	}
 
 	item := items[index]
+	if action == utils.Delete {
+		item.Hide = true
+		if err := dm.Save(item).Error; err != nil {
+			return fmt.Errorf("failed to save item: %w", err)
+		}
+		return BashHistory()
+	}
+
 	item.Priority = item.Priority + 1
 	if err := dm.Save(item).Error; err != nil {
 		return fmt.Errorf("failed to save item: %w", err)

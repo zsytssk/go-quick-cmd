@@ -11,11 +11,18 @@ import (
 	"github.com/creack/pty"
 )
 
-func RunFZF(input string) (string, error) {
+type ActionKind uint
+
+const (
+	Invalid ActionKind = iota
+	Delete
+)
+
+func RunFZF(input string) (action ActionKind, selected string, err error) {
 	// 创建伪终端
 	ptm, pts, err := pty.Open()
 	if err != nil {
-		return "", err
+		return
 	}
 	defer ptm.Close()
 	defer pts.Close()
@@ -23,26 +30,34 @@ func RunFZF(input string) (string, error) {
 	// 创建结果缓冲区
 	// 配置fzf命令
 	var buf bytes.Buffer
-	fzf := exec.Command("fzf", "--ansi")
+	fzf := exec.Command("fzf", "--ansi", "--expect=ctrl-d", "--header=提示: ctrl-d 隐藏选项")
 	fzf.Stdout = io.MultiWriter(pts, &buf) // 实时显示并捕获
 
 	fzf.Stderr = os.Stderr
 	fzf.Stdin = strings.NewReader(input) // 允许接收键盘输入
 
 	// 执行命令并等待完成
-	if err := fzf.Run(); err != nil {
-		return "", err
+	if err = fzf.Run(); err != nil {
+		return
 	}
 
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if lines[0] == "ctrl-d" {
+		action = Delete
+		selected = lines[1]
+		return
+	}
+	action = Invalid
+	selected = lines[0]
 	// 返回清理后的结果
-	return strings.TrimSpace(buf.String()), nil
+	return
 }
 
-func RunFZFStream(reader io.Reader) (string, error) {
+func RunFZFStream(reader io.Reader) (action ActionKind, selected string, err error) {
 	// 创建伪终端
 	ptm, pts, err := pty.Open()
 	if err != nil {
-		return "", err
+		return
 	}
 	defer ptm.Close()
 	defer pts.Close()
@@ -50,19 +65,28 @@ func RunFZFStream(reader io.Reader) (string, error) {
 	// 创建结果缓冲区
 	// 配置fzf命令
 	var buf bytes.Buffer
-	fzf := exec.Command("fzf", "--ansi")
+	fzf := exec.Command("fzf", "--ansi", "--expect=ctrl-d", "--header=提示: ctrl-d 隐藏选项")
 	fzf.Stdout = io.MultiWriter(pts, &buf) // 实时显示并捕获
 
 	fzf.Stderr = os.Stderr
 	fzf.Stdin = reader // 允许接收键盘输入
 
 	// 执行命令并等待完成
-	if err := fzf.Run(); err != nil {
-		return "", err
+	if err = fzf.Run(); err != nil {
+		return
 	}
 
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if lines[0] == "ctrl-d" {
+		action = Delete
+		selected = lines[1]
+		return
+	}
+	action = Invalid
+	selected = lines[0]
+
 	// 返回清理后的结果
-	return strings.TrimSpace(buf.String()), nil
+	return
 }
 
 func RunCMD(input string) (string, error) {

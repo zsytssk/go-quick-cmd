@@ -40,6 +40,9 @@ func JumpDir() (err error) {
 	go func() {
 		defer writer.Close()
 		for _, item := range list {
+			if item.Hide {
+				continue
+			}
 			fmt.Fprintf(writer, "%s [%d:%d]\n", item.Name, item.ID, item.Priority)
 		}
 		utils.RunCMDInSteam(cmdStr, func(line string) {
@@ -55,7 +58,7 @@ func JumpDir() (err error) {
 		})
 	}()
 
-	selected, err := utils.RunFZFStream(reader)
+	action, selected, err := utils.RunFZFStream(reader)
 	if err != nil {
 		if utils.IsCanceled(err) {
 			return nil
@@ -76,6 +79,13 @@ func JumpDir() (err error) {
 	}
 
 	item := list[index]
+	if action == utils.Delete {
+		item.Hide = true
+		if err := dm.Save(item).Error; err != nil {
+			return fmt.Errorf("failed to save item: %w", err)
+		}
+		return JumpDir()
+	}
 	item.Priority = item.Priority + 1
 	if err := dm.Save(item).Error; err != nil {
 		return fmt.Errorf("failed to save item: %w", err)

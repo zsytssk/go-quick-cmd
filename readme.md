@@ -4,10 +4,18 @@
 
 ## 2025-07-14 14:44:03
 
+- action 能不能写成类型
+
+---
+
 - @todo hide
   - fzf 监听快捷键
 
----
+```
+lines := strings.Split(buf.String(), "\n")
+key := lines[0] // ctrl-d
+choice := lines[1] // Cherry
+```
 
 - @todo 集合命令 -> 通过名称区分
   - unionCommand
