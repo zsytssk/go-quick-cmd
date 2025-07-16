@@ -22,7 +22,10 @@ func BashHistory() (err error) {
 	if err != nil {
 		return
 	}
-	dm := dbt.NewModel(db, &HistoryItem{})
+	dm, err := dbt.NewModel(db, &HistoryItem{})
+	if err != nil {
+		return fmt.Errorf("failed to get history items: %w", err)
+	}
 	items, err := GetHistory(dm)
 	if err != nil {
 		return fmt.Errorf("failed to get history items: %w", err)

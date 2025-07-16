@@ -22,7 +22,10 @@ func JumpDir() (err error) {
 	if err != nil {
 		return
 	}
-	dm := dbt.NewModel(db, &DirItem{})
+	dm, err := dbt.NewModel(db, &DirItem{})
+	if err != nil {
+		return
+	}
 	list, err := getDirHistory(dm)
 	if err != nil {
 		return

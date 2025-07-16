@@ -2,6 +2,7 @@ package dbt
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"quick-cmd/utils"
@@ -9,7 +10,7 @@ import (
 	"strings"
 )
 
-type TableInterface interface {
+type TableStruct interface {
 	TableName() string
 }
 
@@ -25,15 +26,10 @@ func Init(dbPath string) (db *sql.DB, err error) {
 	return
 }
 
-type TableStruct interface {
-	TableName() string
-}
-
-func StructToSQLCreateTable(db *sql.DB, obj TableStruct) (err error) {
+func StructToSQLCreateTable(db *sql.DB, obj TableStruct, fields_list []FieldItem) (err error) {
 	if CheckTableExist(db, obj.TableName()) {
 		return
 	}
-	fields_list := collectFields(obj)
 	var columns []string
 	for _, field := range fields_list {
 		db_type := field.DbType
@@ -61,12 +57,11 @@ func StructToSQLCreateTable(db *sql.DB, obj TableStruct) (err error) {
 	}
 	return
 }
-func StructToSQLInsert(db *sql.DB, obj TableStruct) (err error) {
-	exists, err := CheckItemExist(db, obj)
+func StructToSQLInsert(db *sql.DB, obj TableStruct, fields_list []FieldItem) (err error) {
+	exists, err := CheckItemExist(db, obj, fields_list)
 	if exists || err != nil {
 		return
 	}
-	fields_list := collectFields(obj)
 	var columns []string
 	var placeholders []string
 	var values []interface{}
@@ -90,8 +85,12 @@ func StructToSQLInsert(db *sql.DB, obj TableStruct) (err error) {
 	}
 	return
 }
-func StructToSQLUpdate(db *sql.DB, obj TableStruct, ignore_zero bool) (err error) {
-	fields_list := collectFields(obj)
+func StructToSQLUpdate(
+	db *sql.DB,
+	obj TableStruct,
+	fields_list []FieldItem,
+	ignore_zero bool,
+) (err error) {
 	var columns []string
 	var where_str string
 	for _, field := range fields_list {
@@ -118,9 +117,8 @@ func StructToSQLUpdate(db *sql.DB, obj TableStruct, ignore_zero bool) (err error
 	return
 }
 
-func StructToSQLDelete(db *sql.DB, obj TableStruct) (err error) {
+func StructToSQLDelete(db *sql.DB, obj TableStruct, fields_list []FieldItem) (err error) {
 	// DELETE FROM users WHERE id = 3;
-	fields_list := collectFields(obj)
 	var where_str string
 	for _, field := range fields_list {
 		db_type := field.DbType
@@ -140,8 +138,11 @@ func StructToSQLDelete(db *sql.DB, obj TableStruct) (err error) {
 	return
 }
 
-func StructToSQLGetList[T TableStruct](db *sql.DB, obj T) (list []T, err error) {
-	fields_list := collectFields(obj)
+func StructToSQLGetList(db *sql.DB, obj TableStruct) (list []TableStruct, err error) {
+	fields_list, err := collectFields(obj)
+	if err != nil {
+		return
+	}
 	var columns []string
 	for _, field := range fields_list {
 		columns = append(columns, field.Name)
@@ -179,13 +180,12 @@ func StructToSQLGetList[T TableStruct](db *sql.DB, obj T) (list []T, err error) 
 		if err != nil {
 			log.Fatal(err)
 		}
-		list = append(list, elemVal.Interface().(T))
+		list = append(list, elemVal.Interface().(TableStruct))
 	}
 	return
 }
 
-func CheckItemExist(db *sql.DB, obj TableStruct) (exists bool, err error) {
-	fields_list := collectFields(obj)
+func CheckItemExist(db *sql.DB, obj TableStruct, fields_list []FieldItem) (exists bool, err error) {
 	var where_str string
 	for _, field := range fields_list {
 		db_type := field.DbType
@@ -225,46 +225,54 @@ type FieldItem struct {
 	Value   interface{}
 }
 
-func collectFields(obj interface{}) (connects []FieldItem) {
+func collectFields(obj interface{}) (connects []FieldItem, err error) {
 	v := reflect.ValueOf(obj)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		errors.New("这是一个简单的错误")
+		return
 	}
 	t := v.Type()
 
 	for i := 0; i < t.NumField(); i++ {
 		fieldType := t.Field(i)
 		fieldVal := v.Field(i)
-
 		// 跳过未导出字段
-		if !fieldType.IsExported() || !fieldVal.CanInterface() {
+		if !fieldVal.CanInterface() {
 			continue
 		}
 		value := fieldVal.Interface()
 		// 匿名字段 && 是 struct，递归处理
 		if fieldType.Anonymous && fieldType.Type.Kind() == reflect.Struct {
-			sub_list := collectFields(value)
+			sub_list, err := collectFields(value)
+			if err != nil {
+				return connects, err
+			}
 			connects = append(connects, sub_list...)
 			continue
 		}
 
 		// 字段名使用 json tag，否则用字段名
-		name := fieldType.Tag.Get("json")
-		if name == "" || name == "-" {
-			name = utils.CamelToSnake(fieldType.Name)
+		fieldName := fieldType.Tag.Get("json")
+		if fieldName == "-" {
+			continue
+		}
+		if fieldName == "" {
+			fieldName = utils.CamelToSnake(fieldType.Name)
 		}
 		dbType := fieldType.Tag.Get("db")
 
 		sqlType := GoTypeToSQLType(fieldType.Type, dbType == "primaryKey")
 		connects = append(connects, FieldItem{
 			DbType:  dbType,
-			Name:    name,
+			Name:    fieldName,
 			OriName: fieldType.Name,
 			OriType: fieldType.Type,
 			SqlType: sqlType,
 			Value:   value,
 		})
-
 	}
 
 	return
@@ -283,7 +291,7 @@ func getTableColumns(db *sql.DB, obj TableStruct) (columns []TableColumn, err er
 	sqlStr := fmt.Sprintf("PRAGMA table_info(%s);", strings.ToLower(obj.TableName()))
 	rows, err := db.Query(sqlStr)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -312,9 +320,11 @@ func CheckTableExist(db *sql.DB, tableName string) (exist bool) {
 	return err == nil && exists
 }
 
-func SyncTableColumns(db *sql.DB, obj TableStruct) (err error) {
+func SyncTableColumns(db *sql.DB, obj TableStruct, fields_list []FieldItem) (err error) {
 	columns, err := getTableColumns(db, obj)
-	fields_list := collectFields(obj)
+	if err != nil {
+		return
+	}
 
 	for _, column := range columns {
 		if utils.ArrFindIndex(fields_list, func(field FieldItem, index int) bool {

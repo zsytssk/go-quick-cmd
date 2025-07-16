@@ -25,27 +25,28 @@ type Model struct {
 	conditions []Condition
 }
 
-func NewModel(db *sql.DB, obj TableStruct) *Model {
-	fields_list := collectFields(obj)
-	m := &Model{
+func NewModel(db *sql.DB, obj TableStruct) (m *Model, err error) {
+	fields_list, err := collectFields(obj)
+	if err != nil {
+		return
+	}
+	m = &Model{
 		DB:        db,
 		Obj:       obj,
 		TableInfo: TableInfo{FieldsList: fields_list, TableName: obj.TableName()},
 	}
 	if !CheckTableExist(m.DB, m.Obj.TableName()) {
-		err := StructToSQLCreateTable(m.DB, m.Obj)
+		err := StructToSQLCreateTable(m.DB, m.Obj, m.TableInfo.FieldsList)
 		if err != nil {
-			m.Error = err
-			return m
+			return m, err
 		}
 	} else {
-		err := SyncTableColumns(m.DB, m.Obj)
+		err := SyncTableColumns(m.DB, m.Obj, m.TableInfo.FieldsList)
 		if err != nil {
-			m.Error = err
-			return m
+			return m, err
 		}
 	}
-	return m
+	return
 }
 
 func (m *Model) BuildConditions(conditions []Condition) string {
@@ -117,29 +118,48 @@ func (m *Model) Order(order string) *Model {
 }
 
 func (m *Model) Save(value interface{}) *Model {
-	exists, err := CheckItemExist(m.DB, value.(TableStruct))
+	field_list, err := collectFields(value)
+	if err != nil {
+		m.Error = err
+		return m
+	}
+	exists, err := CheckItemExist(m.DB, value.(TableStruct), field_list)
 	if err != nil {
 		m.Error = err
 		return m
 	}
 	if !exists {
-		err = StructToSQLInsert(m.DB, value.(TableStruct))
+		err = StructToSQLInsert(m.DB, value.(TableStruct), field_list)
 		m.Error = err
 		return m
 	}
-	err = StructToSQLUpdate(m.DB, value.(TableStruct), false)
+	err = StructToSQLUpdate(m.DB, value.(TableStruct), field_list, false)
 	m.Error = err
 	return m
 }
 
 func (m *Model) Update(value interface{}) *Model {
-	err := StructToSQLUpdate(m.DB, value.(TableStruct), true)
+	err := StructToSQLUpdate(m.DB, value.(TableStruct), m.TableInfo.FieldsList, true)
 	m.Error = err
 	return m
 }
 
 func (m *Model) Delete(value interface{}) *Model {
-	err := StructToSQLDelete(m.DB, value.(TableStruct))
+	field_list, err := collectFields(value)
+	if err != nil {
+		m.Error = err
+		return m
+	}
+	err = StructToSQLDelete(m.DB, value.(TableStruct), field_list)
+	m.Error = err
+	return m
+}
+
+func (m *Model) Count(count *int64) *Model {
+	sql := fmt.Sprintf("SELECT COUNT(*) FROM %s", m.BuildConditions(m.conditions))
+	err := m.DB.QueryRow(
+		sql,
+	).Scan(count)
 	m.Error = err
 	return m
 }
@@ -173,14 +193,7 @@ func (m *Model) First(first interface{}) *Model {
 	m.Error = err
 	return m
 }
-func (m *Model) Count(count *int64) *Model {
-	sql := fmt.Sprintf("SELECT COUNT(*) FROM %s", m.BuildConditions(m.conditions))
-	err := m.DB.QueryRow(
-		sql,
-	).Scan(count)
-	m.Error = err
-	return m
-}
+
 func (m *Model) Find(dest interface{}) *Model {
 	destVal := reflect.ValueOf(dest)
 	if destVal.Kind() == reflect.Ptr {
