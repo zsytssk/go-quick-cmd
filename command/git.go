@@ -1,0 +1,105 @@
+package command
+
+import (
+	"fmt"
+	"log"
+	"quick-cmd/utils"
+	"strings"
+
+	"gopkg.in/ini.v1"
+)
+
+var supportGitCmd = []string{"submodule", "submoduleLite"}
+
+func Git(cmd []string) (err error) {
+	if len(cmd) == 0 {
+		fmt.Println(`请输入git下级命令`)
+		return
+	}
+
+	switch cmd[0] {
+	case "submodule":
+		if len(cmd) == 1 {
+			fmt.Println(`请输入git submodule下级命令`)
+			return
+		}
+		submodules := getSubmodules()
+		err = runSubmodulesCmd(submodules, strings.Join(cmd[1:], " "), false)
+	case "submoduleLite":
+		if len(cmd) == 1 {
+			fmt.Println(`请输入git submodule下级命令`)
+			return
+		}
+		submodules := getSubmodules()
+		err = runSubmodulesCmd(submodules, strings.Join(cmd[1:], " "), true)
+	default:
+		fmt.Println(`只支持命令:`, strings.Join(supportGitCmd, ", "))
+		return
+	}
+
+	return
+}
+
+type Submodules struct {
+	Path  string
+	Items []SubmoduleItem
+}
+type SubmoduleItem struct {
+	Name   string
+	Path   string
+	URL    string
+	Branch string
+}
+
+func getSubmodules() Submodules {
+	topPath, err := utils.RunCMD("git rev-parse --show-toplevel")
+	if err != nil {
+		log.Fatalf("无法读取 git目录: %v", err)
+	}
+
+	cfg, err := ini.Load(fmt.Sprintf(`%s/.gitmodules`, topPath))
+	if err != nil {
+		log.Fatalf("无法读取 .gitmodules: %v", err)
+	}
+	var list []SubmoduleItem
+	for _, section := range cfg.Sections() {
+		if section.Name() == "DEFAULT" {
+			continue
+		}
+		list = append(list, SubmoduleItem{
+			section.Name(),
+			section.Key("path").String(),
+			section.Key("url").String(),
+			section.Key("branch").String(),
+		})
+	}
+	return Submodules{
+		Items: list,
+		// Path:  "/home/zsy/Documents/zsy/job/plims-background",
+		Path: topPath,
+	}
+}
+
+func runSubmodulesCmd(submodule Submodules, cmd string, lite bool) (err error) {
+	if !lite {
+		fmt.Println(submodule.Path)
+	}
+	output, err := utils.RunCMD(fmt.Sprintf("cd %s && %s", submodule.Path, cmd))
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(output)
+
+	for _, item := range submodule.Items {
+		fullPath := fmt.Sprintf("%s/%s", submodule.Path, item.Path)
+		if !lite {
+			fmt.Printf("---\n%s\n", fullPath)
+		}
+		output, err := utils.RunCMD(fmt.Sprintf("cd %s && %s", fullPath, cmd))
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(output)
+	}
+	return
+}

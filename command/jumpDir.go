@@ -98,7 +98,7 @@ func JumpDir() (err error) {
 }
 
 func getDirHistory(dm *dbt.Model) (list []DirItem, err error) {
-	oldMap, err := utils.ReadFile("~/.bash_history")
+	oldMap, err := utils.ReadFileLines("~/.bash_history")
 	if err != nil {
 		return
 	}

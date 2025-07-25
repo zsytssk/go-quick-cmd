@@ -81,7 +81,7 @@ func BashHistory() (err error) {
 }
 
 func GetHistory(dm *dbt.Model) (items []HistoryItem, err error) {
-	lineMap, err := utils.ReadFile("~/.bash_history")
+	lineMap, err := utils.ReadFileLines("~/.bash_history")
 
 	if err != nil {
 		return

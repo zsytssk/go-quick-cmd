@@ -41,7 +41,7 @@ func expandPath(path string) (string, error) {
 	return path, nil
 }
 
-func ReadFile(filePath string) (lineMap map[string]int, err error) {
+func ReadFileLines(filePath string) (lineMap map[string]int, err error) {
 	filePath, err = expandPath(filePath)
 	if err != nil {
 		return
@@ -66,6 +66,34 @@ func ReadFile(filePath string) (lineMap map[string]int, err error) {
 	if err := scanner.Err(); err != nil {
 		fmt.Println("读取文件时出错:", err)
 		return nil, err
+	}
+
+	return
+}
+
+func ReadFile(filePath string) (content string, err error) {
+	filePath, err = expandPath(filePath)
+	if err != nil {
+		return
+	}
+	// 打开文件
+	file, err := os.Open(filePath)
+	if err != nil {
+		fmt.Println("打开文件失败:", err)
+		return
+	}
+	defer file.Close()
+
+	// 创建一个 Scanner 来逐行读取
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		content += scanner.Text() // 获取当前行文本
+	}
+
+	// 检查是否读取中有错误
+	if err = scanner.Err(); err != nil {
+		fmt.Println("读取文件时出错:", err)
+		return
 	}
 
 	return

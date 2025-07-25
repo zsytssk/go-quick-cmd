@@ -12,11 +12,11 @@ func IsZero(v interface{}) bool {
 	return val.IsZero() // Go 1.13+
 }
 
-func GetCmd() *string {
+func GetCmd() []string {
 	if len(os.Args) == 1 {
 		return nil
 	}
-	return &os.Args[1]
+	return os.Args[1:]
 }
 
 func ExtractPath(input string) string {

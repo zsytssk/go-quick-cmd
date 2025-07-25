@@ -5,31 +5,32 @@ import (
 	"log"
 	"quick-cmd/command"
 	"quick-cmd/utils"
-	"slices"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var supportCmd = []string{"bashHistory", "jumpDir"}
+var supportCmd = []string{"bashHistory", "jumpDir", "git"}
 
 func main() {
 	cmd := utils.GetCmd()
-	if cmd == nil {
-		fmt.Println(`请输入执行命令 "bashHistory" | "jumpDir"`)
-		return
-	}
-	if !slices.Contains(supportCmd, *cmd) {
-		fmt.Println(`只支持命令："bashHistory" | "jumpDir"`, *cmd)
+
+	if len(cmd) == 0 {
+		fmt.Println(`只支持命令:`, strings.Join(supportCmd, ", "))
 		return
 	}
 
 	var err error
-
-	switch *cmd {
+	switch cmd[0] {
 	case "bashHistory":
 		err = command.BashHistory()
-	default:
+	case "jumpDir":
 		err = command.JumpDir()
+	case "git":
+		err = command.Git(cmd[1:])
+	default:
+		fmt.Println(`只支持命令:`, strings.Join(supportCmd, ", "))
+		return
 	}
 
 	if err != nil {
