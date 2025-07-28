@@ -52,13 +52,26 @@ type SubmoduleItem struct {
 }
 
 func getSubmodules() Submodules {
-	topPath, err := utils.RunCMD("git rev-parse --show-toplevel")
-	if err != nil {
-		log.Fatalf("无法读取 git目录: %v", err)
+	var cfg *ini.File
+	var topPath string
+	var err error
+	for i := 0; i < 2; i++ {
+		cmd := "git rev-parse --show-toplevel"
+		if i == 1 {
+			cmd = "cd .. && git rev-parse --show-toplevel"
+		}
+		topPath, err = utils.RunCMD(cmd)
+		if err != nil {
+			log.Fatalf("无法读取 git目录: %v", err)
+		}
+
+		cfg, err = ini.Load(fmt.Sprintf(`%s/.gitmodules`, topPath))
+		if cfg != nil {
+			break
+		}
 	}
 
-	cfg, err := ini.Load(fmt.Sprintf(`%s/.gitmodules`, topPath))
-	if err != nil {
+	if cfg == nil && err != nil {
 		log.Fatalf("无法读取 .gitmodules: %v", err)
 	}
 	var list []SubmoduleItem
