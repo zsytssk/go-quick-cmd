@@ -104,7 +104,7 @@ func RunCMD(input string) (string, error) {
 	cmd := exec.Command("bash", "-c", input)
 	cmd.Stdout = io.MultiWriter(pts, &buf) // 实时显示并捕获
 
-	cmd.Stderr = os.Stderr
+	// cmd.Stderr = os.Stderr
 	// cmd.Stdin = io.MultiReader(strings.NewReader(input)) // 允许接收键盘输入
 
 	// 执行命令并等待完成
