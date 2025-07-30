@@ -55,23 +55,27 @@ func getSubmodules() Submodules {
 	var cfg *ini.File
 	var topPath string
 	var err error
+	var localErr error
 	for i := 0; i < 2; i++ {
 		cmd := "git rev-parse --show-toplevel"
 		if i == 1 {
 			cmd = "cd .. && git rev-parse --show-toplevel"
 		}
-		topPath, err = utils.RunCMD(cmd)
-		if err != nil {
-			log.Fatalf("无法读取 git目录: %v", err)
+		topPath, localErr = utils.RunCMD(cmd)
+		if localErr != nil && i == 0 {
+			log.Fatalf("无法读取 git目录: %v", localErr)
 		}
 
-		cfg, err = ini.Load(fmt.Sprintf(`%s/.gitmodules`, topPath))
+		cfg, localErr = ini.Load(fmt.Sprintf(`%s/.gitmodules`, topPath))
 		if cfg != nil {
 			break
 		}
+		if i == 0 {
+			err = localErr
+		}
 	}
 
-	if cfg == nil && err != nil {
+	if cfg == nil {
 		log.Fatalf("无法读取 .gitmodules: %v", err)
 	}
 	var list []SubmoduleItem
