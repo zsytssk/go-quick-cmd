@@ -66,7 +66,10 @@ func getSubmodules() Submodules {
 			log.Fatalf("无法读取 git目录: %v", localErr)
 		}
 
-		cfg, localErr = ini.Load(fmt.Sprintf(`%s/.gitmodules`, topPath))
+		cfg, localErr = ini.Load(fmt.Sprintf(`%s/.gitmodules.local`, topPath))
+		if cfg == nil {
+			cfg, localErr = ini.Load(fmt.Sprintf(`%s/.gitmodules`, topPath))
+		}
 		if cfg != nil {
 			break
 		}
@@ -74,7 +77,6 @@ func getSubmodules() Submodules {
 			err = localErr
 		}
 	}
-
 	if cfg == nil {
 		log.Fatalf("无法读取 .gitmodules: %v", err)
 	}

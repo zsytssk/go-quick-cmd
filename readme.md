@@ -1,4 +1,4 @@
-`go build  -o /home/zsy/.config/awesome/autostart/ignoreBin/quickCmd`
+`go build  -o /home/zsy/.config/awesome/autostart/ignoreBin/quick-cmd`
 
 - @ques 有什么像 fzf 但是能设置权重的工具
 
