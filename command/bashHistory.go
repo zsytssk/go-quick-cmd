@@ -56,20 +56,20 @@ func BashHistory() (err error) {
 	})
 
 	if !found {
-		return fmt.Errorf("item not found: %s", selected)
+		return fmt.Errorf("item not found1: %s", selected)
 	}
 
 	if action == utils.ActionDelete {
 		item.Hide = true
 		if err := dm.Save(item).Error; err != nil {
-			return fmt.Errorf("failed to save item: %w", err)
+			return fmt.Errorf("failed to save item1: %w", err)
 		}
 		return BashHistory()
 	}
 
 	item.Priority = item.Priority + 1
 	if err := dm.Save(item).Error; err != nil {
-		return fmt.Errorf("failed to save item: %w", err)
+		return fmt.Errorf("failed to save item2: %w", err)
 	}
 	if len(item.Content) > 0 {
 		fmt.Print(item.Content)
