@@ -20,6 +20,9 @@ func Git(cmd []string) (err error) {
 	}
 
 	switch cmd[0] {
+	case "init":
+		submodules := getSubmodules()
+		err = initProject(submodules)
 	case "submodule":
 		if len(cmd) == 1 {
 			fmt.Println(`请输入git submodule下级命令`)
@@ -77,6 +80,21 @@ func getSubmodules() Submodules {
 		Items: list,
 		Path:  topPath,
 	}
+}
+
+func initProject(submodule Submodules) (err error) {
+	for _, item := range submodule.Items {
+		fullPath := fmt.Sprintf("%s/%s", submodule.Path, item.Path)
+		parent := filepath.Dir(fullPath)
+		lastFolder := filepath.Base(fullPath)
+		output, err := utils.RunCMD(fmt.Sprintf("cd %s && git clone %s %s && cd %s && git checkout %s", parent, item.URL, lastFolder, lastFolder,item.Branch))
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(output)
+	}
+
+	return
 }
 
 func runSubmodulesCmd(submodule Submodules, cmd string, lite bool) (err error) {
